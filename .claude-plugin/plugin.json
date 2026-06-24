@@ -1,0 +1,8 @@
+{
+  "name": "growmax-skills",
+  "description": "Growmax team Claude Code skills. Skills live in skills/ and are auto-discovered. Currently ships: github-repo-analyzer.",
+  "author": {
+    "name": "Growmax"
+  },
+  "homepage": "https://github.com/growmax/growmax-skills"
+}
