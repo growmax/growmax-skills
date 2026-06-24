@@ -1,0 +1,16 @@
+{
+  "name": "growmax",
+  "owner": {
+    "name": "Growmax"
+  },
+  "description": "Shared Claude Code skills for the Growmax team.",
+  "plugins": [
+    {
+      "name": "growmax-skills",
+      "source": ".",
+      "description": "Growmax team skills bundle. Includes github-repo-analyzer: turn any GitHub repo into a short briefing (what it is, problem, why used) plus a two-part 'safe to use?' verdict — license (can a closed-source B2B SaaS use it) and security (Trivy scan for CVEs, secrets, misconfigs).",
+      "category": "productivity",
+      "keywords": ["github", "repo-analysis", "security", "license", "trivy", "growmax"]
+    }
+  ]
+}
