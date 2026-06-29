@@ -1,9 +1,10 @@
 # growmax-skills
 
-Shared [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) skills for the
-Growmax team, distributed as a **Claude Code plugin marketplace**. A skill is just a folder
-with a `SKILL.md` (plus optional `scripts/` and `references/`); this repo bundles them into a
-plugin so teammates install with one command and get updates automatically.
+Shared [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) skills **and
+workflows** for the Growmax team, distributed as a **Claude Code plugin marketplace**. A skill is
+just a folder with a `SKILL.md` (plus optional `scripts/` and `references/`); a workflow is a slash
+command plus its subagents (and optional hooks). The plugin auto-discovers `skills/`, `commands/`,
+`agents/`, and `hooks/`, so teammates install with one command and get updates automatically.
 
 ## Install (recommended — plugin marketplace)
 
@@ -69,9 +70,26 @@ git pull                # later: symlinked skills update instantly
 
 ## Catalog
 
+### Skills
+
 | Skill | Invoke as | What it does |
 |---|---|---|
 | `github-repo-analyzer` | `/growmax-skills:github-repo-analyzer` | Analyze any GitHub repo — what it is, problem, why used, benefits — plus a two-part "safe to use?" verdict: license (open source? can Growmax use it?) and security (a Trivy scan for CVEs, secrets, misconfigs). |
+
+### Workflows (command + subagents)
+
+| Workflow | Invoke as | What it does |
+|---|---|---|
+| `e2e-flow` | `/growmax-skills:e2e-flow <target> <flow>` | Gated, multi-agent E2E test generation for **web** (Playwright + playwright-mcp) and **api** (the repo's Jest/supertest or Vitest runner) surfaces. Discovers a flow → **you approve the business intent** → plans against the *real* repo → writes one spec → self-heals to green or **flags a real app bug** → reviews. Enforces tenant-isolation assertions, self-cleaning teardown, and DB-write safety. Ships 6 subagents (`flow-finder`, `api-flow-finder`, `flow-planner`, `test-writer`, `validator`, `reviewer`) + a surface-aware spec-hygiene hook. |
+
+> **Per-repo overlay:** the agents read repo-specific facts (ports, login, naming/teardown
+> convention, driver gotchas, DB-safety) from a `.claude/E2E-NOTES.md` overlay if present. Copy
+> `examples/E2E-NOTES.template.md` into your repo's `.claude/`, fill it in, and commit it.
+>
+> **Heads-up — the hook is global.** Installing this plugin activates a `PostToolUse` hook
+> (`hooks/check-e2e-spec.sh`) that runs on every `Write`/`Edit`. It only acts on `*.spec.ts` /
+> `*.e2e-spec.ts` files (web → Playwright hygiene; api → create-without-teardown), and exits
+> silently on everything else.
 
 ## Add a new skill
 
@@ -89,8 +107,10 @@ This repo is **self-hosting**: it's a plugin marketplace *and* the plugin in one
 
 - `.claude-plugin/marketplace.json` — the catalog (declares the `growmax` marketplace and the
   `growmax-skills` plugin, sourced from the repo root `.`).
-- `.claude-plugin/plugin.json` — the plugin manifest. Skills are auto-discovered from
-  `skills/`, so adding a skill is just dropping a folder in.
+- `.claude-plugin/plugin.json` — the plugin manifest. Components are auto-discovered: `skills/`
+  (one folder + `SKILL.md` each), `commands/` (slash commands), `agents/` (subagents), and
+  `hooks/hooks.json` (event hooks). Adding a skill is just dropping a folder in; adding a workflow
+  is dropping a command + its agents in.
 
 Three ways skills can live, for reference:
 

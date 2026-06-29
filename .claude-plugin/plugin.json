@@ -1,6 +1,6 @@
 {
   "name": "growmax-skills",
-  "description": "Growmax team Claude Code skills. Skills live in skills/ and are auto-discovered. Currently ships: github-repo-analyzer.",
+  "description": "Growmax team Claude Code skills and workflows. Auto-discovers skills/, commands/, agents/, and hooks/. Ships: github-repo-analyzer (skill) and e2e-flow (gated multi-agent E2E test-generation workflow for web + api surfaces).",
   "author": {
     "name": "Growmax"
   },

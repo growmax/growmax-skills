@@ -8,9 +8,9 @@
     {
       "name": "growmax-skills",
       "source": ".",
-      "description": "Growmax team skills bundle. Includes github-repo-analyzer: turn any GitHub repo into a short briefing (what it is, problem, why used) plus a two-part 'safe to use?' verdict — license (can a closed-source B2B SaaS use it) and security (Trivy scan for CVEs, secrets, misconfigs).",
+      "description": "Growmax team skills + workflows bundle. github-repo-analyzer: turn any GitHub repo into a short briefing plus a two-part 'safe to use?' verdict (license + Trivy security scan). e2e-flow: gated multi-agent E2E test generation for web (Playwright) and api (Jest/supertest) surfaces — discover a flow, approve the intent, plan against the real repo, write one spec, self-heal to green or flag a real app bug, review; enforces tenant-isolation, teardown, and DB-write safety.",
       "category": "productivity",
-      "keywords": ["github", "repo-analysis", "security", "license", "trivy", "growmax"]
+      "keywords": ["github", "repo-analysis", "security", "license", "trivy", "growmax", "e2e", "testing", "playwright", "test-generation"]
     }
   ]
 }
