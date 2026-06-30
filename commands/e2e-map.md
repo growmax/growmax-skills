@@ -34,12 +34,33 @@ and drives no browser.
 
 ### Phase 1 — Persist the map
 Write the returned map verbatim to **`docs/e2e-flow-map.md`** in the target repo (create `docs/` if
-needed). This file is durable — it's the contract `/e2e-batch` reads. Confirm `base:` in the header
-matches the real Playwright/runner target (read `playwright.config.*` or the runner config to verify;
-correct it if the overlay was stale).
+needed), in the canonical format `examples/e2e-flow-map.template.md` (the `Pre-approval digest`
+section is appended in Phase 1.5). This file is durable — it's the contract `/e2e-batch` reads. Confirm
+`base:` in the header matches the real Playwright/runner target (read `playwright.config.*` or the
+runner config to verify; correct it if the overlay was stale).
+
+### Phase 1.5 — Completeness review → the pre-approval digest
+A long map hides gaps, and the human is about to approve it as the contract for the *entire* autonomous
+batch. So before the gate, audit the map for what's missing — in **two passes, split by cost**, because
+checking what's PRESENT is cheap but checking what's ABSENT needs real reasoning:
+
+1. **`approval-gap-structural`** (`haiku`) — mechanical diff of the map vs the real route/API surface
+   and existing specs: routes/ops with no row, incomplete rows, writes not flagged ⚠, suspect coverage
+   claims, duplicates, unchecked-by-category tally. Cheap — it's present-vs-map cross-referencing.
+2. **`approval-gap-category`** (`sonnet`) — judgment pass: whole *kinds* of flow the census couldn't
+   see (permission-denied / cross-tenant negatives, auth-token edges, empty/error states, pagination &
+   large-result boundaries, per-role variants, write integrity, cross-surface). A missed *category* at
+   approval = an area tested **never** — so this never runs on a cheap model.
+
+Dispatch both against the persisted map + repo + overlay (they may run concurrently; feed the category
+pass the structural findings so it doesn't repeat them). Assemble their returns into the
+**`## Pre-approval digest`** section of `docs/e2e-flow-map.md` (the template's A/B/C structure). This
+turns "approve 257 rows and hope" into "resolve N specific gaps, then approve." If the digest finds
+genuine omissions, add the rows (or record the decision to skip them) before the gate.
 
 ### THE GATE — one approval (blocks)
-Present the map and **stop**. The human does three things here, once, for the whole app:
+Present the **pre-approval digest first** — the action checklist of the few specific gaps to resolve —
+then the map itself, and **stop**. The human does three things here, once, for the whole app:
 1. **Picks flows** — edits the `Gen?` column to `[x]` on the flows to generate. ("Map all, you pick":
    covered flows are included but default unchecked; the human opts in.)
 2. **Answers the open questions** — these become the pre-approved business rules the batch encodes.
@@ -79,3 +100,6 @@ read-only (autonomous) vs write (gated), how many already covered vs new. Then p
 ## Model
 Run the orchestrator on the session model. `flow-census` ships `opus` — the map gates the *entire*
 batch, so quality here pays off most; it runs once. Drop to `sonnet` only for a small app.
+The approval-gap review is split by cost: `approval-gap-structural` runs on `haiku` (present-vs-map
+cross-referencing is cheap), `approval-gap-category` on `sonnet` (absence detection must not be
+cheaped out — a missed category goes untested forever). Both are declared in their agent frontmatter.
