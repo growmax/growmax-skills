@@ -1,0 +1,97 @@
+{
+  "_README": [
+    "TEMPLATE for docs/nav-manifest.json — the durable FRONTIER STATE owned by /app-cartograph.",
+    "This file is the source of truth for the live walk, NOT the agent's context. It makes the walk",
+    "resumable (re-run /app-cartograph → it reads this and continues from the first unvisited surface)",
+    "and write-safe. Seeded from flow-census (the code = the completeness denominator), then burned",
+    "down by the nav-cartographer walk. Coverage = visited / discoverable, per role.",
+    "JSON has no comments — field meanings are documented in _legend below; delete _README/_legend in",
+    "the real file, or keep them, they're ignored by tooling."
+  ],
+  "_legend": {
+    "surface.status": "unvisited | visited | blocked | unreachable | redirect | skipped",
+    "surface.source": "code (seeded by flow-census) | discovered (found during the walk)",
+    "surface.rw": "R (reads only) | W (exposes a create/mutate/delete) — default W when unsure",
+    "surface.roles.<role>": "visible | gated | redirect(<where>) | notfound | error | unknown",
+    "surface.purpose_source": "auto (agent confident, review at GATE B) | human (blessed) | ambiguous (ask at GATE A) | unset",
+    "surface.api_calls[].rw": "R | W   — distilled + SECRET-REDACTED; never raw HAR / tokens / bodies",
+    "surface.writes_at": "specific write actions present on this surface (gated; never auto-executed)"
+  },
+  "app": "<app name>",
+  "base_url": "<https://app.example.com or http://localhost:3000>",
+  "driver": "playwright-mcp | claude-in-chrome",
+  "roles_walked": ["anonymous", "buyer"],
+  "seeded_at_commit": "<git sha of the target repo when seeded>",
+  "coverage": {
+    "discoverable": 0,
+    "by_role": {
+      "anonymous": { "visited": 0, "blocked": 0, "unreachable": 0, "coverage_pct": 0 },
+      "buyer": { "visited": 0, "blocked": 0, "unreachable": 0, "coverage_pct": 0 }
+    }
+  },
+  "surfaces": [
+    {
+      "id": "catalog-pdp",
+      "route": "/[locale]/product/[slug]",
+      "example_url": "/en/product/widget-123",
+      "nav_path": "Home → Catalog → Product detail",
+      "source": "code",
+      "status": "visited",
+      "rw": "R",
+      "writes_at": [],
+      "roles": { "anonymous": "visible", "buyer": "visible" },
+      "api_calls": [
+        { "method": "GET", "path": "/api/products/:id", "rw": "R", "entities": ["Product"] },
+        { "method": "GET", "path": "/api/pricing/:id", "rw": "R", "entities": ["Price"] }
+      ],
+      "flows": ["View product details", "Add item to cart"],
+      "purpose": "Shows a single product with price + add-to-cart so a buyer can evaluate and start an order.",
+      "purpose_source": "human",
+      "screenshot": null,
+      "notes": "Price hidden for anonymous when showPricePublic=false (admin-controlled)."
+    },
+    {
+      "id": "checkout",
+      "route": "/[locale]/checkout",
+      "example_url": "/en/checkout",
+      "nav_path": "Cart → Checkout",
+      "source": "code",
+      "status": "visited",
+      "rw": "W",
+      "writes_at": ["\"Place order\" button → POST /api/orders"],
+      "roles": { "anonymous": "redirect(/login)", "buyer": "visible" },
+      "api_calls": [
+        { "method": "GET", "path": "/api/cart", "rw": "R", "entities": ["Cart"] }
+      ],
+      "flows": ["Review cart", "Place an order (WRITE — gated, walked up to submit only)"],
+      "purpose": "Final review + order placement from the cart.",
+      "purpose_source": "human",
+      "screenshot": null,
+      "notes": "GATE W: walked up to Place order; not executed (live/UAT target)."
+    },
+    {
+      "id": "account-users",
+      "route": "/[locale]/account/users",
+      "example_url": "/en/account/users",
+      "nav_path": "Account → Users",
+      "source": "discovered",
+      "status": "unvisited",
+      "rw": "W",
+      "writes_at": [],
+      "roles": { "anonymous": "redirect(/login)", "buyer": "unknown" },
+      "api_calls": [],
+      "flows": [],
+      "purpose": null,
+      "purpose_source": "unset",
+      "screenshot": null,
+      "notes": "Found via Account nav during walk; not yet visited."
+    }
+  ],
+  "open_questions": [
+    "<business rule the walk couldn't resolve — e.g. 'min search length?', 'who may invite users?'>"
+  ],
+  "redaction": {
+    "applied": true,
+    "note": "Bearer/JWT/Authorization/cookies/bodies stripped at capture; manifest + docs grep-checked clean."
+  }
+}
