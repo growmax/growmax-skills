@@ -47,7 +47,17 @@ Heal TEST bugs only, smallest fix, re-run. **Cap: 3 attempts/step** → then sto
   assertion) to pass; try/catch-swallowing a failure; touching app source. Re-read the approved
   success + isolation signals before every heal.
 
+## Artifacts (disposable — don't commit them)
+Each run writes `test-results/`, `playwright-report/`, `.last-run.json`, traces/videos, and any
+playwright-mcp `page-*.png` into the working tree. These are NOT outputs — the spec is.
+- **Green run:** don't curate them; the orchestrator deletes them in Phase 6. Just don't stage them.
+- **APP bug (you stop):** the trace/video/screenshot of the failing run is the bug evidence — name
+  it and its path in your report so the orchestrator preserves it instead of deleting it.
+- Never add any artifact dir/file to a commit, and never disable the trace/video that captures a
+  real failure just to keep the tree tidy.
+
 ## Return
 - ✅ Green: path, flow, exact success assertion used, isolation assertion confirmed.
-- ❌ App bug: failing step, expected vs actual, repro, test left failing.
+- ❌ App bug: failing step, expected vs actual, repro, test left failing, **path to the trace/video
+  evidence** to preserve.
 - ❓ Business ambiguity: the precise question.

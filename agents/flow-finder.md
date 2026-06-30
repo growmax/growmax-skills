@@ -63,3 +63,7 @@ gotchas before you start.
 - Locator preference: getByRole → getByLabel → getByText → getByTestId. No CSS/XPath chains.
 - Branching on an unseen business rule = open question, not a guess.
 - No spec files, no scaffolding. That comes after the human approves you.
+- **Screenshots are disposable.** Prefer the accessibility snapshot — capture an image only when you
+  genuinely need to *see* the UI. If you do, save it to a scratch/temp dir (NOT the repo root or the
+  spec dir) so it never lands in the working tree, and list any you created under **Driver notes** so
+  the orchestrator can clean them up in Phase 6. Never leave `page-*.png` files scattered in the repo.

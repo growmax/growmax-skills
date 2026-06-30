@@ -12,6 +12,12 @@ description: >-
 
 # /e2e-flow — gated multi-agent E2E workflow (web + api)
 
+> **One flow per invocation, with a human gate on the business understanding (GATE 1).** Use this for
+> a single named flow. To cover a WHOLE app without a per-flow gate, run `/e2e-map` (census every
+> flow → one approval → `docs/e2e-flow-map.md`) then `/e2e-batch` (generate the approved flows
+> autonomously — read-only unattended, write flows gated). `/e2e-map` + `/e2e-batch` reuse these same
+> agents; they move the single human approval up to the map level instead of repeating it per flow.
+
 You are the **orchestrator** in the main session. You do NOT explore, plan, write, heal, or
 review yourself — you **dispatch subagents** via the Task tool, thread their outputs forward,
 and **enforce the gates**. Subagents cannot spawn subagents, so every delegation happens here.
@@ -47,6 +53,9 @@ they fall back to repo discovery.
 - **GATE 2 (business ambiguity) is conditional.** Any subagent that hits a business rule it can't
   resolve stops and asks — never guesses.
 - **Self-heal fixes the test, never the app.** A test failing on a real app bug is reported.
+- **The spec is the only durable output; everything else is disposable.** Discovery screenshots
+  (`page-*.png` from playwright-mcp) and Playwright run reports/results must be cleaned up at the
+  end and NEVER committed (Phase 6). Failure evidence is kept only for a quarantined app bug.
 
 ## Workflow
 
@@ -89,12 +98,30 @@ yourself.
 On green, review for flakiness/duplication/naming, isolation/role coverage gaps, missing teardown,
 and worthwhile additions. Safe fixes applied; rest recommended. Re-run validator if the spec changed.
 
-### Phase 6 — Complete (you)
-Summarize: surface, flow, file path, success assertion, isolation assertion, any app bug flagged,
-reviewer notes. Append the flow to a coverage registry (`docs/e2e-coverage.md` or the repo's
-equivalent — create it on first use): covered / quarantined-as-app-bug. Commit only green specs
-(quarantine app-bug tests as `.fixme`/`.skip` with a linked note). Don't commit for the user
-without their okay.
+### Phase 6 — Complete & clean up (you)
+**Summarize:** surface, flow, file path, success assertion, isolation assertion, any app bug
+flagged, reviewer notes. Append the flow to a coverage registry (`docs/e2e-coverage.md` or the
+repo's equivalent — create it on first use): covered / quarantined-as-app-bug.
+
+**Clean up the artifacts the run scattered into the working tree.** Discovery and validation leave
+disposable files behind — playwright-mcp screenshots (a `.playwright-mcp/` dir of
+`page-<timestamp>.png`), Playwright run outputs (`test-results/`, `playwright-report/`,
+`blob-report/`, `.last-run.json`, the report `index.html`), traces/videos/zips, and any temp
+fixtures. The committed spec is the ONLY durable output. Once the run is done:
+1. **Run `git status` first** to see exactly what the run produced, then remove only **untracked**
+   files matching those artifact patterns. Never delete tracked source or the committed spec, and
+   never `git clean -x` blindly (it can wipe `.env`/local config) — target the patterns explicitly.
+2. **Preserve failure evidence ONLY for a quarantined APP-bug:** keep that test's trace/video/
+   screenshot, move it to a known path, and reference it from the quarantine note. Delete it once
+   the bug is fixed. On a green run, keep nothing.
+3. **Guardrail so it stays clean:** ensure the repo's `.gitignore` covers `.playwright-mcp/`,
+   `test-results/`, `playwright-report/`, `blob-report/`, `playwright/.cache/`, and `.last-run.json`.
+   Add any missing entries (a small separate commit, not mixed into the spec).
+4. **Verify:** end on a `git status` that shows ONLY the intended changes — the spec, the coverage
+   doc, and any `.gitignore` tweak — with nothing else dangling.
+
+**Commit:** only green specs (quarantine app-bug tests as `.fixme`/`.skip` with a linked note).
+Don't commit for the user without their okay.
 
 ## Web exploration: playwright-mcp first, Claude-for-Chrome as fallback
 - **Default explorer is playwright-mcp** — it returns the accessibility tree and exact role/name
@@ -104,6 +131,29 @@ without their okay.
   Chrome explores with trusted OS-level events + vision, but yields coordinates/vision, not clean
   locators — so the finder MUST translate what it did back into Playwright `getByRole`/`getByLabel`
   locators. The committed spec is Playwright regardless.
+
+## Model selection (which model per phase)
+Each subagent runs on the model in its `model:` frontmatter (`flow-planner` ships `opus`, the rest
+`sonnet`); the orchestrator runs on the session model. Pick by the *kind of thinking* the phase needs, not by
+habit: **discovery/planning are reasoning-heavy and run once; writing/healing are code-heavy and
+may iterate many times** (cost scales with tool calls, so the model choice bites hardest there).
+To change a default, edit that agent's `model:` field.
+
+| Phase · agent | Recommended | Why | Don't go below |
+|---|---|---|---|
+| Orchestrator (this session) | **Sonnet** (Opus for max gate rigor) | Threads outputs, enforces gates, talks to the user — judgment over volume. | Sonnet — gate enforcement needs real reasoning. |
+| 1 · `flow-finder` (web) | **Sonnet** | Infers business intent from a noisy a11y tree across many MCP calls. | Haiku only for a trivial, already-known flow — it misreads intent. |
+| 1 · `api-flow-finder` | **Sonnet** (Opus for deep resolver/guard graphs) | Code comprehension over schema, resolvers, guards, data model. | Haiku for tiny, obvious flows only. |
+| 2 · `flow-planner` | **Opus** | Hardest step — detects surface/runner/auth/teardown/**DB-safety** and maps steps→assertions incl. **tenant-isolation**. The plan gates everything downstream, so quality here pays off most. | Sonnet if cost-bound (still solid); never Haiku. |
+| 3 · `test-writer` | **Sonnet** | Best coding model; the confirmed plan removes ambiguity, so this is execution, not design. | Sonnet — weaker = flaky locators / bad teardown. |
+| 4 · `validator` | **Sonnet** | TEST-bug vs APP-bug classification is subtle and safety-critical (misclassify → a real app bug gets papered over); the heal loop iterates, so cost matters. | **Never Haiku** — misclassification defeats the whole workflow. |
+| 5 · `reviewer` | **Sonnet** (Opus for a deep audit) | Flakiness / coverage-gap judgment over a small diff. | Haiku for a light lint-style pass only. |
+
+Rules of thumb:
+- **Reasoning that gates downstream work → Opus.** `flow-planner` is the one phase clearly worth the upgrade; a bad plan wastes every phase after it.
+- **Code gen & iterative healing → Sonnet** — the coding sweet spot, and cheap enough to survive a heal loop.
+- **Haiku only where a mistake is cheap and the input is unambiguous** — never for planning or the validator's bug-classification.
+- Override at dispatch by editing the agent's `model:` frontmatter (e.g. bump `flow-planner` to `opus` for a large/complex repo, drop a finder to `haiku` for a throwaway flow).
 
 ## Notes
 - React and Next.js share the web path; the planner adapts to whichever the repo is.

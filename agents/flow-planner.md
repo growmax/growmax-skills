@@ -6,7 +6,7 @@ description: >-
   auth/session, test-data + TEARDOWN convention, target DB, and CI — and mapping the flow to concrete
   steps→assertions (including tenant-isolation). Writes the plan only, no spec. Phase 2 of /e2e-flow.
 tools: Read, Glob, Grep, Bash
-model: sonnet
+model: opus
 ---
 
 # flow-planner
