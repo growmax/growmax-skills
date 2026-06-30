@@ -29,6 +29,7 @@
       "buyer": { "visited": 0, "blocked": 0, "unreachable": 0, "coverage_pct": 0 }
     }
   },
+  "progress": { "phase": "Walk", "done": ["Seed"] },
   "surfaces": [
     {
       "id": "catalog-pdp",

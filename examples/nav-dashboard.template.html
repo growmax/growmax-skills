@@ -1,0 +1,148 @@
+<!--
+  TEMPLATE for the on-demand /app-cartograph dashboard.
+  How it's used at render time (Phase 1+ of a run, when the human asks "show dashboard"):
+    1. Read docs/nav-manifest.json from the target repo.
+    2. Replace the placeholder token in the <script id="nav-manifest"> block below with the
+       manifest file's raw JSON.
+    3. Write the filled file to the scratch dir, then publish with the Artifact tool
+       (load the artifact-design skill first, per that tool's requirement).
+    4. To refresh, re-fill + re-publish to the SAME file path so it keeps the same Artifact URL.
+  This file is page-content only (the Artifact tool adds the document skeleton at publish time) and
+  fully self-contained — no external resources.
+-->
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --line:#30363d; --txt:#c9d1d9; --muted:#8b949e;
+    --green:#3fb950; --amber:#d29922; --red:#f85149; --blue:#58a6ff; --grey:#6e7681;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+    font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; padding:24px; }
+  h1 { font-size:18px; margin:0 0 2px; }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    margin:28px 0 10px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .sub { color:var(--muted); font-size:12px; margin-bottom:18px; }
+  .cards { display:flex; flex-wrap:wrap; gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; min-width:200px; flex:1; }
+  .card .role { font-weight:600; }
+  .bar { height:10px; background:#21262d; border-radius:5px; overflow:hidden; margin:8px 0 6px; }
+  .bar > i { display:block; height:100%; background:var(--green); }
+  .counts { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+  .pipeline { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+  .step { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:3px 11px; font-size:12px; color:var(--muted); }
+  .step.done { color:var(--green); border-color:var(--green); }
+  .step.now { color:var(--bg); background:var(--blue); border-color:var(--blue); font-weight:600; }
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px; }
+  table { border-collapse:collapse; width:100%; min-width:760px; font-size:13px; }
+  th,td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:var(--panel); color:var(--muted); position:sticky; top:0; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  code { color:var(--blue); font-size:12px; }
+  .badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .b-visited{ background:rgba(63,185,80,.15); color:var(--green); }
+  .b-queued{ background:rgba(110,118,129,.2); color:var(--grey); }
+  .b-blocked,.b-error{ background:rgba(248,81,73,.15); color:var(--red); }
+  .b-unreachable{ background:rgba(248,81,73,.1); color:#da6a63; }
+  .b-redirect{ background:rgba(88,166,255,.15); color:var(--blue); }
+  .b-skipped{ background:rgba(110,118,129,.12); color:var(--muted); }
+  .rw-W{ color:var(--amber); font-weight:700; }
+  .rw-R{ color:var(--muted); }
+  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; }
+  .v-visible{ background:var(--green);} .v-gated,.v-redirect{ background:var(--amber);}
+  .v-error,.v-notfound{ background:var(--red);} .v-unknown{ background:var(--grey);}
+  .qs { color:var(--amber); }
+  ul { margin:6px 0; padding-left:20px; } li { margin:3px 0; }
+  .empty { color:var(--muted); font-style:italic; }
+</style>
+
+<h1 id="title">App Map dashboard</h1>
+<div class="sub" id="meta"></div>
+
+<h2>Coverage</h2>
+<div class="cards" id="coverage"></div>
+
+<h2>Pipeline</h2>
+<div class="pipeline" id="pipeline"></div>
+
+<h2>Surfaces</h2>
+<div class="tablewrap"><table id="surfaces"><thead></thead><tbody></tbody></table></div>
+
+<h2>Open questions</h2>
+<ul id="questions"></ul>
+
+<script id="nav-manifest" type="application/json">__MANIFEST_JSON__</script>
+<script>
+(function () {
+  var m;
+  try { m = JSON.parse(document.getElementById('nav-manifest').textContent); }
+  catch (e) { document.getElementById('meta').textContent = 'No manifest data embedded yet.'; return; }
+
+  var roles = m.roles_walked && m.roles_walked.length ? m.roles_walked : ['default'];
+  document.getElementById('title').textContent = 'App Map — ' + (m.app || 'app');
+  document.getElementById('meta').textContent =
+    (m.base_url || '') + '  ·  driver: ' + (m.driver || '?') + '  ·  roles: ' + roles.join(', ');
+
+  // Coverage cards (per role) — prefer manifest.coverage, else compute from surfaces.
+  var surfaces = m.surfaces || [];
+  var cov = document.getElementById('coverage');
+  roles.forEach(function (role) {
+    var c = (m.coverage && m.coverage.by_role && m.coverage.by_role[role]) || {};
+    var disc = (m.coverage && m.coverage.discoverable) || surfaces.length || 0;
+    var visited = c.visited != null ? c.visited : surfaces.filter(function (s) { return s.status === 'visited'; }).length;
+    var pct = c.coverage_pct != null ? c.coverage_pct : (disc ? Math.round(visited / disc * 100) : 0);
+    var writes = surfaces.filter(function (s) { return s.rw === 'W'; }).length;
+    var blocked = surfaces.filter(function (s) { return s.status === 'blocked' || s.status === 'unreachable' || s.status === 'error'; }).length;
+    var queued = surfaces.filter(function (s) { return s.status === 'unvisited'; }).length;
+    var el = document.createElement('div'); el.className = 'card';
+    el.innerHTML = '<div class="role">' + role + '</div>' +
+      '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div style="font-size:12px">' + pct + '% &middot; ' + visited + '/' + disc + ' surfaces</div>' +
+      '<div class="counts" style="margin-top:8px">' +
+        '<span>&#10003; ' + visited + '</span><span class="qs">&#9888; ' + writes + ' writes</span>' +
+        '<span style="color:var(--red)">&#9940; ' + blocked + '</span><span>&#9719; ' + queued + ' queued</span></div>';
+    cov.appendChild(el);
+  });
+
+  // Pipeline — phases; highlight current if manifest.progress.phase is set.
+  var phases = ['Seed', 'Walk', 'Reconcile', 'Review', 'Synthesize', 'Graph'];
+  var cur = (m.progress && m.progress.phase) || '';
+  var done = (m.progress && m.progress.done) || [];
+  var pl = document.getElementById('pipeline');
+  phases.forEach(function (p) {
+    var s = document.createElement('span'); s.className = 'step';
+    if (p === cur) s.className += ' now'; else if (done.indexOf(p) > -1) s.className += ' done';
+    s.textContent = p; pl.appendChild(s);
+  });
+
+  // Surfaces table — route, status, R/W, one visibility column per role, purpose, APIs.
+  var thead = document.querySelector('#surfaces thead');
+  var roleCols = roles.map(function (r) { return '<th>' + r + '</th>'; }).join('');
+  thead.innerHTML = '<tr><th>Route</th><th>Status</th><th>R/W</th>' + roleCols + '<th>Purpose</th><th>Key APIs</th></tr>';
+  var tb = document.querySelector('#surfaces tbody');
+  if (!surfaces.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">No surfaces yet.</td></tr>'; }
+  surfaces.slice().sort(function (a, b) { return (a.route || '').localeCompare(b.route || ''); }).forEach(function (s) {
+    var st = s.status || 'unvisited';
+    var stLabel = st === 'unvisited' ? 'queued' : st;
+    var roleCells = roles.map(function (r) {
+      var v = (s.roles && s.roles[r]) || 'unknown';
+      var key = v.split('(')[0];
+      return '<td><span class="dot v-' + key + '" title="' + v + '"></span> <span style="font-size:11px;color:var(--muted)">' + v + '</span></td>';
+    }).join('');
+    var apis = (s.api_calls || []).map(function (a) { return a.method + ' ' + a.path; }).join('<br>') || '<span class="empty">—</span>';
+    var purpose = s.purpose || '<span class="empty">(unconfirmed)</span>';
+    var rwTag = (s.rw === 'W' ? '<span class="rw-W">W ⚠</span>' : '<span class="rw-R">R</span>');
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><code>' + (s.route || '') + '</code></td>' +
+      '<td><span class="badge b-' + stLabel + '">' + stLabel + '</span></td>' +
+      '<td>' + rwTag + '</td>' + roleCells +
+      '<td>' + purpose + '</td><td style="font-size:11px">' + apis + '</td>';
+    tb.appendChild(tr);
+  });
+
+  // Open questions
+  var q = document.getElementById('questions');
+  var qs = m.open_questions || [];
+  if (!qs.length) { q.innerHTML = '<li class="empty">none</li>'; }
+  else { qs.forEach(function (t) { var li = document.createElement('li'); li.className = 'qs'; li.textContent = t; q.appendChild(li); }); }
+})();
+</script>

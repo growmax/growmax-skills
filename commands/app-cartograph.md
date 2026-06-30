@@ -138,6 +138,33 @@ queryable knowledge graph (entities, roles, routes, APIs, flows and their relati
 - **Summarize:** coverage % per role, # surfaces (visited/blocked/unreachable), # write surfaces found, # purposes auto vs human-corrected, anything unresolved.
 - **Point onward:** `/e2e-map <target>` to turn this understanding into a tested E2E suite. The map you just built makes that census faster and its flows already business-validated.
 
+## Progress display (status panel + on-demand dashboard)
+Make the run **legible** — the human should see the *shape* of what's happening, not a wall of prose.
+
+**Status panel — always on, ~free.** At every phase transition, after each walk batch, and at every
+gate, print a compact panel built **only from data you actually have**. Never fabricate elapsed time or
+token counts — omit the `⏱`/`↓` line unless the harness surfaces them:
+```
+┌─ /app-cartograph · <app> ····································
+│ Phase <n>/6 · <phase> (<role>)
+│ Coverage ███████████░░░░░░ <pct>% (<visited>/<discoverable>)
+│ ✓visited <n>  ⚠writes <n>  ⛔blocked <n>  ◷queued <n>
+│ Now: <current route> → <key api> (<R/W>)
+│ Gates: GATE A ×<n> pending · GATE W ×<n> held
+└··············································
+```
+This is the default view and costs essentially nothing — it's the same facts you'd narrate anyway.
+
+**Dashboard — on-demand, a few k tokens.** When the human asks ("show dashboard", "viz", "show me the
+map"), render the HTML dashboard from the manifest:
+1. Read `docs/nav-manifest.json`.
+2. Fill `examples/nav-dashboard.template.html` — replace the `__MANIFEST_JSON__` placeholder with the raw manifest JSON. Write the filled file to the **scratch dir**.
+3. Load the `artifact-design` skill (required before publishing), then publish via the **Artifact** tool.
+4. **Refresh = re-fill + re-publish to the SAME file path** → same URL. Do NOT auto-render every batch (that's what costs tokens) — render when asked, or at a milestone the human named.
+
+To light up the dashboard's live phase, keep the optional `progress` object in the manifest updated as
+you go (`{"phase":"Walk","done":["Seed"]}`). It's optional — the dashboard degrades gracefully without it.
+
 ## Context budget & resumability (never lose work)
 A 60+ surface app would blow a single context window if walked in one shot. The design prevents that —
 and guarantees a half-finished walk is never lost:

@@ -97,6 +97,32 @@ The workflow runs mostly on its own but **pauses for you** at three points:
 3. **Batch review (GATE B)** — at the end it shows you all the auto-labeled screens in one table to
    confirm or correct in a single pass.
 
+## Watching progress (so it's not a wall of text)
+
+Two views, picked by cost:
+
+- **Status panel — always on, ~free.** At each phase, batch, and gate, the run prints a compact panel
+  so you can see the shape at a glance:
+  ```
+  ┌─ /app-cartograph · buyer portal ··············
+  │ Phase 1/6 · Walk (anonymous)
+  │ Coverage ███████████░░░░░░ 58% (24/42)
+  │ ✓visited 24  ⚠writes 5  ⛔blocked 2  ◷queued 16
+  │ Now: /in/product/[slug] → GET /api/products/:id (R)
+  │ Gates: GATE A ×3 pending · GATE W ×1 held
+  └··············································
+  ```
+- **HTML dashboard — on request, a few k tokens.** Say *"show dashboard"* (or *"viz"*) and it renders a
+  visual page from `docs/nav-manifest.json` — coverage bars per role, a color-coded surface table
+  (visited / queued / blocked / write ⚠), per-role visibility, the phase pipeline, and open questions.
+  It opens as an Artifact; ask again to **refresh** it (re-renders to the same URL). It's opt-in
+  because each render costs tokens — the panel is the free everyday view, the dashboard is when you
+  want the full picture. Template: [`examples/nav-dashboard.template.html`](../examples/nav-dashboard.template.html).
+
+> Cost perspective: the browser walk and the agents are the expensive part of a run; both progress
+> views are a rounding error next to that. The panel is effectively free; the dashboard only costs when
+> you ask for it.
+
 ## What you get (outputs)
 
 All written into the **target repo's** `docs/`:
