@@ -1,7 +1,7 @@
 {
   "name": "growmax-skills",
-  "version": "1.2.0",
-  "description": "Growmax team Claude Code skills and workflows. Auto-discovers skills/, commands/, agents/, and hooks/. Ships: github-repo-analyzer (skill); app-cartograph (map a live app into durable context — navigation + business flows + knowledge graph — via a code-seeded frontier and a write-safe human-in-the-loop walk; runs upstream of E2E); e2e-flow (gated multi-agent E2E test-generation for a single flow, web + api); and e2e-map + e2e-batch (whole-app flow census → one approval → autonomous suite generation).",
+  "version": "1.4.0",
+  "description": "Growmax team Claude Code skills and workflows. Auto-discovers skills/, commands/, agents/, and hooks/. Ships: github-repo-analyzer (skill); feature-review (end-of-development multi-agent review — TDD compliance, contextual-creation UX, 10k-row scalability + security sweep, advisory architecture ideas — one verified scorecard with a per-finding HIGH/MEDIUM/LOW confidence report, a run ledger, and a periodic-calibration process for improving precision over time); app-cartograph (map a live app into durable context — navigation + business flows + knowledge graph — via a code-seeded frontier and a write-safe human-in-the-loop walk; runs upstream of E2E); e2e-flow (gated multi-agent E2E test-generation for a single flow, web + api); and e2e-map + e2e-batch (whole-app flow census → one approval → autonomous suite generation).",
   "author": {
     "name": "Growmax"
   },
