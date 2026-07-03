@@ -81,11 +81,25 @@ rows (customers, orders, products)?**
 - When scale and security overlap (e.g. unbounded query = also a DoS vector), report once at
   the higher severity with both scenarios.
 
+## Confidence — tag every finding with how you know it
+
+Add a `basis` to each finding:
+- `verified` — you grepped/read the exact where-clause or query and the absence/presence is
+  unambiguous (e.g. `organizationId` genuinely does not appear in this `where`).
+- `read` — the pattern is visible in the cited code but the failure magnitude is your estimate
+  (e.g. you can see the missing pagination arg, but "10k rows" is a stated assumption, not a
+  measured count).
+- `inferred` — you reasoned from the shape of the code without directly observing the specific
+  failure (e.g. "this looks like it could N+1" without counting the actual query issued).
+- Tenant-scoping and authz findings should almost always be `verified` or `read` — these are
+  facts about the code, not estimates; if you can't get there, say so and drop to `inferred`
+  rather than overstating a security claim.
+
 ## Return (structured)
 
-- `findings[]`: `{severity, dimension: scale|security, file, line, summary, failureScenario,
-  fix}` — fix is one concrete sentence (the index to add, the pagination arg shape, the
-  decorator to apply), reusing the repo's existing patterns.
+- `findings[]`: `{severity, basis, dimension: scale|security, file, line, summary,
+  failureScenario, fix}` — fix is one concrete sentence (the index to add, the pagination arg
+  shape, the decorator to apply), reusing the repo's existing patterns.
 - `suitesRecommended[]`: the overlay's security/isolation suites the orchestrator should have
   run (and whether you ran them, with results).
 - `verdict`: PASS / BLOCK + one line.

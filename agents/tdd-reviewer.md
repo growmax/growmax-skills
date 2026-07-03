@@ -53,10 +53,24 @@ baseline). Trust the overlay but verify paths against the repo.
   guessing green.
 - Don't demand tests for generated files, lockfiles, or pure-presentation markup with no logic.
 
+## Confidence — tag every finding with how you know it
+
+Add a `basis` to each finding, picked honestly:
+- `verified` — you ran something that proves it now (the suite actually failed; a grep
+  confirms the exact absence/presence of a pattern).
+- `read` — you read the exact cited lines and the defect is directly visible there (a test file
+  genuinely doesn't exist; an `expect(true)` body).
+- `inferred` — you reasoned about likely behavior without directly observing it (e.g. "this
+  probably doesn't cover the error path" without finding the specific missing assertion).
+- `judgment` — a call about sufficiency, not a fact (e.g. "this test is a bit thin").
+
+Findings from suite runs (`FAILED`) are always `verified` — that's the highest-trust signal you
+produce; say so explicitly so the orchestrator doesn't spend time re-checking it.
+
 ## Return (structured)
 
 - `suiteRun`: command(s) + PASS/FAIL/NOT-RUN + failure output if any.
-- `findings[]`: `{severity, file, line, summary, failureScenario, suggestedTest}` — for
+- `findings[]`: `{severity, basis, file, line, summary, failureScenario, suggestedTest}` — for
   coverage gaps, `suggestedTest` names the behavior the missing test should assert, in one
   sentence.
 - `exemptions[]`: files you deliberately didn't require tests for, with the reason.

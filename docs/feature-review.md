@@ -42,9 +42,73 @@ ARC's filled-in overlay lives at `ARC/.claude/REVIEW-NOTES.md`.
 ## What you get back
 
 A scorecard: verdict per dimension, blockers (each with `file:line`, the concrete failure
-scenario, and the fix route), warns, and up to three advisory ideas. Then a final
-READY / NOT READY line. The workflow is review-only; if you say "fix them", the orchestrator
-dispatches fixes through the routed skills and **re-runs the affected reviewer** to confirm.
+scenario, and the fix route), warns, and up to three advisory ideas — plus a **confidence
+report** and a final READY / NOT READY line. The workflow is review-only; if you say "fix them",
+the orchestrator dispatches fixes through the routed skills and **re-runs the affected
+reviewer** to confirm.
+
+## The confidence report
+
+Every finding (except advisory ideas, which never block) carries a confidence level so you can
+tell a verified fact from a judgment call at a glance:
+
+| Confidence | Means | Typical source |
+|---|---|---|
+| **HIGH** | The orchestrator personally confirmed it, or a test suite actually failed, or ≥2 reviewers independently hit the same code | a re-grepped `where` clause with no `organizationId`; a red test run |
+| **MEDIUM** | The citation is confirmed but the scale/impact is an estimate, or it's an inferred pattern the repo overlay explicitly calls out as a known anti-pattern | "no pagination arg" is verified; "this will hurt at 10k rows" is the stated design assumption, not a measured benchmark |
+| **LOW** | A judgment call (most UX warns), or a claim the orchestrator couldn't independently verify | "this screen could use two-way linking"; a static-only read of dynamic behavior |
+
+**A BLOCKER can never sit at LOW confidence** — if a claimed blocker can't be verified beyond
+static inference or opinion, it's automatically demoted to a WARN and tagged
+`(demoted: unverified)`. That's the mechanism that keeps the gate trustworthy: nothing blocks a
+PR on a guess, no matter how confidently a reviewer phrased it.
+
+**Worked example** — for a screen adding a customer picker without inline creation:
+
+```
+### Confidence report
+| # | Finding                                              | Verdict | Confidence | Basis     | How it was checked |
+|---|-------------------------------------------------------|---------|------------|-----------|---------------------|
+| 1 | No pagination on customers list query                  | BLOCKER | HIGH       | verified  | grep confirms no `first`/`take` in the resolver; re-read customers.resolver.ts:42 |
+| 2 | Missing test for the new discount-eligibility branch    | BLOCKER | HIGH       | verified  | `pnpm --filter @ims/api test` ran, discount.service.spec.ts has no case for it |
+| 3 | No inline "+ Create customer" on the assigned-list picker | WARN  | MEDIUM     | read      | AssignedCustomerList.tsx has no create affordance; whether this screen needs it is confirmed by the overlay's "fair game for create-in-place" list |
+| 4 | CustomerSelector could also link back to the customer's order history | WARN | LOW | judgment | genuinely a product nice-to-have, not a defect |
+
+Summary: 2 HIGH · 1 MEDIUM · 1 LOW → both blockers are HIGH; the one LOW-confidence item is a
+WARN, not a blocker, by design.
+```
+
+The point of splitting it out: a reviewer skims the HIGH rows and acts immediately, spends a
+minute sanity-checking the MEDIUM rows, and treats every LOW row as "a human should decide this,
+not more automation."
+
+## How this gets better over time
+
+Every run appends one row to `.claude/feature-review-ledger.md` (template:
+`examples/REVIEW-LEDGER.template.md`) — dimension verdicts, confidence tally, and a blank
+`outcome` column filled in later (fixed / overridden-because-wrong / confirmed-in-prod). This
+is deliberately a *paper trail*, not a dashboard — the value is in periodically reading it, not
+in automated scoring.
+
+Two feedback mechanisms make the workflow sharper the more a team actually uses it:
+
+1. **In-the-moment overlay growth (near-zero cost).** When you tell the orchestrator a finding
+   is wrong or already-known, it offers to add it to `Known accepted debt` in
+   `.claude/REVIEW-NOTES.md` right then. This is the highest-leverage improvement available:
+   the repo-specific knowledge compounds every time someone overrides a finding, instead of
+   requiring someone to anticipate every edge case up front.
+2. **Periodic calibration (every 2-4 weeks, or every ~15-20 runs).** Read the ledger, tally
+   *false positives by category* (not in aggregate — "3 of 4 overrides were
+   scale-security-reviewer pagination warnings on admin-only tools" is actionable), and turn
+   the pattern into one of: a new known-debt entry, a tightened reviewer checklist
+   (`agents/<name>.md`), a missing fact added to the overlay's conventions, or — if a whole
+   finding category never fires despite a known problem class in the codebase — a new check.
+   Bump the plugin version and say what calibration drove the change, so teammates see *why*
+   behavior shifted.
+
+What this deliberately does NOT do: no automated precision scoring, no ML retraining, no
+dashboard. A small team reading its own ledger every few weeks and tightening one prompt or one
+overlay line at a time outperforms unmaintained automation — and costs nothing to build.
 
 ## Team adoption ladder
 
@@ -63,6 +127,12 @@ dispatches fixes through the routed skills and **re-runs the affected reviewer**
 - **Blockers are verified twice.** A reviewer claims it; the orchestrator re-reads the cited
   code before reporting it. Unverifiable blockers get demoted — false alarms kill adoption
   faster than missed bugs.
+- **Confidence is a first-class output, not a footnote.** Every finding says HOW it's known
+  (verified / read / inferred / judgment), so a LOW-confidence claim can never masquerade as a
+  BLOCKER — trust in the gate depends on that separation staying visible.
+- **The ledger is a paper trail sized for a small team, not a metrics platform.** One row per
+  run, one manual calibration pass every few weeks. It gets better because a human closes the
+  loop occasionally, not because the system scores itself.
 - **Advisory is quarantined.** Structure ideas never mix into the pass/fail signal, so the
   gate stays crisp and the ideas stay welcome.
 - **Review-only by default.** The person who wrote the feature stays the author; the workflow

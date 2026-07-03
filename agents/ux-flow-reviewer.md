@@ -59,10 +59,21 @@ there — modal, sheet, or inline row — pre-filled from context, auto-selected
 - Severity discipline: WARN by default; BLOCKER only via overlay rules (e.g. fallback/demo
   data, cross-tenant content) or when the flow is literally uncompletable.
 
+## Confidence — tag every finding with how you know it
+
+Add a `basis` to each finding:
+- `read` — you read the component and the gap is directly visible (no create affordance exists
+  anywhere in the file; the empty-state branch renders no CTA).
+- `inferred` — the code is ambiguous statically (e.g. a modal is imported but you can't confirm
+  it renders create-vs-edit); say what a live check would resolve.
+- `judgment` — this is a product/UX call, not a defect (most of your `WARN`s land here — e.g.
+  whether two-way linking is "worth it" for this entity). Most of your findings are `judgment`,
+  and that's fine — say so plainly rather than dressing an opinion up as a fact.
+
 ## Return (structured)
 
-- `findings[]`: `{severity, file, line, summary, brokenUserStory, suggestion}` — suggestion
-  names the concrete provision (e.g. "add a create-customer sheet to CustomerSelector,
-  auto-select on save"), reusing an existing component where one exists.
+- `findings[]`: `{severity, basis, file, line, summary, brokenUserStory, suggestion}` —
+  suggestion names the concrete provision (e.g. "add a create-customer sheet to
+  CustomerSelector, auto-select on save"), reusing an existing component where one exists.
 - `exemptions[]`: pickers you deliberately didn't flag, with the reason.
 - `verdict`: PASS / WARN / BLOCK + one line.
