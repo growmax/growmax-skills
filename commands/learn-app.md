@@ -88,9 +88,24 @@ Dispatch `flow-census` with the surface + overlay. It enumerates the route tree,
 role/middleware logic, data models, and existing specs. Transform its output into
 `docs/nav-manifest.json` (schema: `examples/nav-manifest.template.json`, shared with
 `/app-cartograph`) — one surface per route, `status: unvisited`, `source: code`. Record the
-**denominator**. Derive the **module taxonomy** here: group routes into 10–20 modules from the route
-groups + nav structure of THIS repo (never import another repo's module list); allow an
-`uncategorized` bucket to be triaged at synthesis.
+**denominator** as an *enumerable list*, not just a count: whatever number you later put in INDEX.md
+("21 surfaces") MUST correspond to the actual surface rows in the manifest, so it can be audited.
+
+**Web vs API — the manifest is web-shaped; map explicitly for headless backends.** The template's
+fields (`nav_path`, `example_url`, `roles: visible/redirect`, `screenshot`) assume a page-based UI.
+For an API-only repo (Express/Nest/GraphQL, no rendered pages), map each surface as: a
+`METHOD /path` operation; `nav_path: null`; role fields = the middleware/guard that gates it
+(`gated_by` role or `public`) rather than visible/redirect; omit `screenshot`/`example_url`. Say in
+INDEX that this is an API surface. Do not force UI concepts onto endpoints, and do not drop the
+extra fields silently — record the mapping choice once in the manifest's top-level notes.
+
+**Module taxonomy — let THIS repo decide the count.** Group surfaces into modules from this repo's
+own route mounts / route groups / nav structure (never import another repo's module list). The
+natural number is whatever the repo has — a 7-mount app yields ~7 modules, not a padded 10+; a large
+app may exceed 20. Do NOT invent modules to hit a range. A **cross-cutting note with zero surfaces is
+legal and encouraged** when a shared library concentrates business rules (e.g. a `pricing` note over
+`lib/pricing.js`) — that's often where the highest-value truth and any docs/code contradictions live.
+Allow an `uncategorized` bucket for leftovers, triaged at synthesis.
 
 ### Phase B2 — Live walk (subagent: `nav-cartographer`, only if target given & reachable)
 Breadth-first burn-down of the frontier in batches of **5–8 surfaces** per dispatch, exactly as in
@@ -101,7 +116,10 @@ Breadth-first burn-down of the frontier in batches of **5–8 surfaces** per dis
   understood; NEVER execute a write. There is no per-write go-ahead in this command (it's async);
   what writes *do* is learned from service code, not by clicking.
 Merge observations into the manifest after each batch (checkpoint = the manifest, never your
-context). Skipped entirely when no target: mark all surfaces `unwalked (code-only run)`.
+context). **Skipped entirely when no target (code-only run):** leave every surface `status:
+unvisited` (the valid enum value — do NOT invent `unwalked`) and set the manifest's top-level
+`walk` field to `"none (code-only run)"` so the reason is recorded once. All resulting notes stay
+`status: draft` with `[code]`/`[docs]` claims only.
 
 ### Phase B3 — Synthesis (subagent: `product-scribe`)
 Dispatch `product-scribe` in **bootstrap** mode with: the manifest path, the module taxonomy, the

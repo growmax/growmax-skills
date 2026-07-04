@@ -33,6 +33,10 @@ return only a one-screen summary + tally. The notes themselves go to disk.
   (the correctness claims — this is the payload) · **Roles & permissions** · **Data touched** ·
   **Connections** (markdown links to sibling notes — this forms the knowledge graph) ·
   **Known gaps / suspicions** (feeds suggestions).
+- **Field-lifecycle nuance:** when a field/behavior only appears or changes after a specific action
+  (not at record creation), say so explicitly — e.g. "`flagged` does not exist on an order until
+  `POST /:id/flag` runs; nothing reads it afterward." These "only-after-X" details are exactly the
+  facts a reader gets wrong; surface them in **How it works** or **Data touched**.
 - **Every factual claim ends with a provenance tag:** `[code]`, `[walk]`, `[docs]`,
   `[human: Q-014 ✓]`, or `[ASSUMPTION, conf: low|med|high]`. An untagged claim is a defect.
   Stating an ASSUMPTION in the voice of fact is THE disqualifying defect — when unsure, it's an
@@ -41,7 +45,8 @@ return only a one-screen summary + tally. The notes themselves go to disk.
 **INDEX.md** — hard cap ~200 lines. Module list with one-line truths + links, the 5–10 platform-wide
 facts everything else hangs on, pointer to the ledger ("N questions open"). This is the always-loaded
 core memory; if it grows past the cap, cut detail from INDEX (it lives in the notes), never the
-module list.
+module list. **Every count in INDEX** (surfaces, questions, modules) must correspond to an
+enumerable set in the notebook or manifest — never assert a number you can't point to a list for.
 
 **open-questions.md** (template `examples/open-questions.template.md`) — append-only entries:
 ```
@@ -51,8 +56,12 @@ module list.
 **Why it matters:** <what spec/behavior decision hangs on this>
 **Your answer:** _
 ```
-Discipline: ≤8 OPEN per module, ordered by priority. Never ask what code can answer. Q-ids are
-global, monotonic, never reused.
+Discipline: ≤8 OPEN per module, ordered by priority. Q-ids are global, monotonic, never reused.
+**Split the factual half from the intent half before filing.** If code answers the factual part
+(e.g. "the minimum IS enforced on the post-discount total" — the code is unambiguous), state that as
+a `[code]` fact in the note and ask ONLY the intent/policy/scope half ("is post-discount the intended
+basis?"). Never file a question whose whole answer is readable from code — that's trivia, not a human
+question.
 
 **glossary.md** — domain terms discovered in routes/models/docs, one definition each, provenance-tagged.
 

@@ -15,7 +15,9 @@
     "surface.roles.<role>": "visible | gated | redirect(<where>) | notfound | error | unknown",
     "surface.purpose_source": "auto (agent confident, review at GATE B) | human (blessed) | ambiguous (ask at GATE A) | unset",
     "surface.api_calls[].rw": "R | W   — distilled + SECRET-REDACTED; never raw HAR / tokens / bodies",
-    "surface.writes_at": "specific write actions present on this surface (gated; never auto-executed)"
+    "surface.writes_at": "specific write actions present on this surface (gated; never auto-executed)",
+    "walk": "OPTIONAL, set by /learn-app: 'none (code-only run)' when no live walk happened — surfaces stay 'unvisited' by design, not by failure. Omit for a normal walked run.",
+    "api_only_mapping": "OPTIONAL, set by /learn-app on headless API repos: for a METHOD /path surface with no UI, nav_path is null, screenshot/example_url omitted, and roles.<role> carries the middleware/guard gate (gated|public) instead of visible/redirect. Record here that the app is API-shaped."
   },
   "app": "<app name>",
   "base_url": "<https://app.example.com or http://localhost:3000>",
