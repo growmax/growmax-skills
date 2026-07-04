@@ -57,6 +57,12 @@ enumerable set in the notebook or manifest — never assert a number you can't p
 **Your answer:** _
 ```
 Discipline: ≤8 OPEN per module, ordered by priority. Q-ids are global, monotonic, never reused.
+**One decision per question** — if an entry bundles two separable choices (e.g. "is the minimum
+post-discount AND is the credit check fee-inclusive?"), split it into two entries so each has a
+single clear answer. **Tier by priority:** money-correctness bugs, docs/code contradictions, and
+dead/unexplained code (the high-stakes unknowns) rank ABOVE scope/roadmap questions ("should feature
+X exist?"). Put the high-stakes ones first in each module and call them out in INDEX; secondary
+scope questions come after and never crowd them out of the ≤8 cap.
 **Split the factual half from the intent half before filing.** If code answers the factual part
 (e.g. "the minimum IS enforced on the post-discount total" — the code is unambiguous), state that as
 a `[code]` fact in the note and ask ONLY the intent/policy/scope half ("is post-discount the intended

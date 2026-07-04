@@ -79,9 +79,13 @@ Format contract (enforced by `product-scribe`, spot-check it yourself):
 ### Phase B0 — Scaffold + reuse check (you)
 1. Create `docs/product/` skeleton from the templates (INDEX placeholder, empty ledger with header,
    glossary stub, suggestions stub).
-2. **Reuse check:** if `docs/nav-manifest.json`, `docs/app-map.md`, or `docs/business-flows.md`
-   already exist (a prior `/app-cartograph` run), treat them as pre-paid Phases B1/B2 — pass them to
-   the scribe as sources instead of re-dispatching census/walk. Only census what they don't cover.
+2. **Reuse check (freshness-gated):** if `docs/nav-manifest.json`, `docs/app-map.md`, or
+   `docs/business-flows.md` already exist (a prior `/app-cartograph` run), treat them as pre-paid
+   Phases B1/B2 ONLY if the manifest's `seeded_at_commit` equals current `HEAD` — pass them to the
+   scribe as sources instead of re-dispatching census/walk, and census only what they don't cover.
+   **If `seeded_at_commit` != HEAD (or is absent), the artifacts are stale — re-census from source
+   and overwrite them.** Never re-import a stale manifest; it can carry forward values that current
+   rules forbid.
 
 ### Phase B1 — Static census (subagent: `flow-census`)
 Dispatch `flow-census` with the surface + overlay. It enumerates the route tree, API operations,
@@ -98,6 +102,11 @@ For an API-only repo (Express/Nest/GraphQL, no rendered pages), map each surface
 (`gated_by` role or `public`) rather than visible/redirect; omit `screenshot`/`example_url`. Say in
 INDEX that this is an API surface. Do not force UI concepts onto endpoints, and do not drop the
 extra fields silently — record the mapping choice once in the manifest's top-level notes.
+
+**Write-on-read surfaces:** an endpoint that reads but also mutates as a side effect (e.g. a `GET`
+that clears an expired cart) is classified `W` for safety, but count it under its HTTP verb for
+coverage reporting and note the side effect in the surface — don't let the W-classification hide it
+from the read-surface tally.
 
 **Module taxonomy — let THIS repo decide the count.** Group surfaces into modules from this repo's
 own route mounts / route groups / nav structure (never import another repo's module list). The
