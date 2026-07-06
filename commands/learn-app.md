@@ -178,9 +178,19 @@ load-bearing, and bumps note `status` (a note whose material assumptions are all
    new `verified_at_commit`, and writes NEW ledger questions for anything whose intent it can't
    infer ("route X appeared in payments since <sha> — what's it for?").
 
+### Phase U2.5 — Format upgrade (always, cheap)
+The kit evolves; notebooks built by older versions must catch up on rerun, never require a wipe.
+Check the notebook against the CURRENT format contract and backfill anything missing by dispatching
+`product-scribe` scoped to just the missing artifacts:
+- `architecture.md` (5 sections) · `runbook.md` · `ui-patterns.md` (UI repos) — create if absent.
+- INDEX **Coverage & confidence** block · ledger **status header** — add if absent.
+- Module notes missing a required section (e.g. Edge cases & error handling) — backfill per note.
+Nothing missing → skip, say so. Existing content is never rewritten by this phase — only gaps filled.
+
 ### Phase U3 — Report (you)
 Commit (`docs(product): fold answers + refresh vs <sha>`). Report: N answers folded, N notes
-touched, N new questions, notes promoted/demoted by status.
+touched, N new questions, notes promoted/demoted by status, artifacts backfilled by the format
+upgrade (if any).
 
 ## Context budget & resumability (never lose work)
 - **State on disk, agent stateless.** The manifest + the notebook ARE the memory. Every batch and
