@@ -60,7 +60,8 @@ Say which mode you're in and why before doing anything else.
 ```
 docs/product/
   INDEX.md            # ≤200 lines. Table of contents: module list + one-line truths + pointers.
-  architecture.md     # REQUIRED: what the product is for, business use case, tech stack, system shape, auth model
+  architecture.md     # REQUIRED, 5 sections: what the product is for & who it's for (business use
+                      #   case), tech stack, system shape, auth & roles model, cross-module business flows
   open-questions.md   # the ledger (template: examples/open-questions.template.md)
   glossary.md         # domain terms, one definition each
   suggestions.md      # ranked gaps/inconsistencies noticed — feeds future work
@@ -70,7 +71,10 @@ docs/product/
 ```
 Format contract (enforced by `product-scribe`, spot-check it yourself):
 - Every module note carries YAML frontmatter: `type, title, description, status
-  (draft|interviewed|stable), verified_at_commit, sources, open_questions`.
+  (draft|interviewed|stable), verified_at_commit, sources, open_questions` — and an
+  **Edge cases & error handling** section (divergent handling headlined).
+- `architecture.md` has all 5 sections; `open-questions.md` carries the status header line
+  (`n OPEN · m answered awaiting fold · k folded`) from bootstrap onward.
 - **Every factual claim is provenance-tagged:** `[code]`, `[walk]`, `[docs]`, `[human: Q-nnn ✓]`, or
   `[ASSUMPTION, conf: low|med|high]`. An untagged claim is a bug. An ASSUMPTION stated as fact is
   the disqualifying bug.
