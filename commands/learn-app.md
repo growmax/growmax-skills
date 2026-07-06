@@ -132,6 +132,13 @@ legal and encouraged** when a shared library concentrates business rules (e.g. a
 Allow an `uncategorized` bucket for leftovers, triaged at synthesis.
 
 ### Phase B2 — Live walk (subagent: `nav-cartographer`, only if target given & reachable)
+**Walk identity — dedicated dev/test account only, NEVER a real user.** Resolve credentials in
+this order: (a) the login facts in `.claude/E2E-NOTES.md`; (b) env vars `LEARN_APP_TEST_EMAIL` /
+`LEARN_APP_TEST_PASSWORD`; (c) neither present → walk **anonymous-only**, record every authed
+surface as `blocked (no test account)`, and tell the human how to provide one (E2E-NOTES or the
+env vars). Never prompt for, guess, or reuse personal credentials. (A network-level write-block is
+a planned hardening on top of this — see the deferred-improvements list in `docs/learn-app.md`.)
+
 Breadth-first burn-down of the frontier in batches of **5–8 surfaces** per dispatch, exactly as in
 `/app-cartograph` Phase 1, with two overrides:
 - **Ledger mode:** surfaces the walker marks `purpose_source: ambiguous` are NOT asked interactively
@@ -208,8 +215,12 @@ load-bearing, and bumps note `status` (a note whose material assumptions are all
 
 ### Phase U2.5 — Format upgrade (always, cheap)
 The kit evolves; notebooks built by older versions must catch up on rerun, never require a wipe.
-Check the notebook against the CURRENT format contract and backfill anything missing by dispatching
-`product-scribe` scoped to just the missing artifacts:
+**Check `format_version` first (deterministic):** the current note format is declared in
+`agents/product-scribe.md` (`format_version: 1` today). A note whose frontmatter carries an older
+number — or no `format_version` at all (pre-versioning) — is outdated by definition; stamp the
+current version as part of backfilling it. Then check the notebook against the CURRENT format
+contract and backfill anything missing by dispatching `product-scribe` scoped to just the missing
+artifacts:
 - `architecture.md` (5 sections) · `runbook.md` · `ui-patterns.md` (UI repos) — create if absent.
 - INDEX **Coverage & confidence** block · ledger **status header** — add if absent.
 - Module notes missing a required section (e.g. Edge cases & error handling) — backfill per note.
@@ -239,6 +250,7 @@ upgrade (if any).
 - **Read-only, always.** No write action is ever executed during a walk. DB-write safety rules of the target repo apply on top.
 - **Secrets never persist.** Redact at capture; grep before commit.
 - **The notebook is per-repo truth.** Never copy notes, taxonomy, or domain assumptions from another repo. The machinery is shared; the knowledge is not.
+- **One runner at a time, on the integration branch.** `/learn-app` runs after merges on the repo's main/integration branch (or a dedicated notebook branch) — never concurrently in two sessions or on parallel feature branches: Q-ids and INDEX edits collide. If the notebook's branch has unmerged notebook changes elsewhere, stop and say so.
 - **Cap the ledger.** ≤8 OPEN questions per module, prioritized. Only questions a human is *required* for (intent, policy, correctness) — never trivia answerable from code.
 
 ## Relationship to the other commands

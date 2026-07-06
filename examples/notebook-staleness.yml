@@ -1,0 +1,43 @@
+# Product-notebook staleness check (non-blocking).
+# Copy to <repo>/.github/workflows/notebook-staleness.yml in any repo that has a
+# /learn-app product notebook (docs/product/). On every PR: if source code changed
+# but docs/product/ didn't, emit a warning annotation reminding the team to run
+# /learn-app. Never fails the build — it's a nudge, not a gate.
+name: notebook-staleness
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Warn when code changed but the product notebook didn't
+        shell: bash
+        run: |
+          set -uo pipefail
+          # No notebook in this repo/branch -> nothing to check.
+          [ -f docs/product/INDEX.md ] || { echo "No product notebook (docs/product/INDEX.md) — skipping."; exit 0; }
+
+          base="origin/${{ github.base_ref }}"
+          git fetch -q origin "${{ github.base_ref }}" || true
+
+          changed="$(git diff --name-only "${base}...HEAD" 2>/dev/null || true)"
+          [ -n "$changed" ] || { echo "No diff detected — skipping."; exit 0; }
+
+          src_changed="$(printf '%s\n' "$changed" | grep -cE '^(src|apps|packages|routes|prisma|pages|lib)/' || true)"
+          notebook_changed="$(printf '%s\n' "$changed" | grep -cE '^docs/product/' || true)"
+
+          if [ "${src_changed:-0}" -gt 0 ] && [ "${notebook_changed:-0}" -eq 0 ]; then
+            echo "::warning title=Product notebook may be stale::This PR changes ${src_changed} source file(s) but docs/product/ is untouched. If behavior/routes/schema changed, run /learn-app to refresh the product notebook."
+          else
+            echo "OK: src_changed=${src_changed:-0}, notebook_changed=${notebook_changed:-0}"
+          fi
+          exit 0

@@ -11,6 +11,13 @@ correct behavior, never invent problems in correct code, and reconstruct multi-s
 (not just list endpoints). These fixtures exercise exactly those failure modes on controlled code
 where we already know every right answer.
 
+## When to run it (both triggers, not just the first)
+1. **Any change to the kit** (commands/learn-app.md, agents/product-scribe.md,
+   agents/product-manager.md, templates).
+2. **Any change to the underlying model** — the session model or an agent's `model:` frontmatter.
+   The kit's behavior is partly a property of the model executing it; a model upgrade can shift
+   behavior with zero kit changes. Re-run the suite before trusting new runs on real repos.
+
 ## Layout
 ```
 regression/learn-app/

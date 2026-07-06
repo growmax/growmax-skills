@@ -37,6 +37,18 @@ Then, any time after:
 - Answer questions in `docs/product/open-questions.md` when you have minutes to spare.
 - Re-run `/learn-app` after answering, or after a release (it detects what changed).
 
+**Two operating rules:**
+- **Live walks use a dedicated dev/test account, never a real user.** Provide it via
+  `.claude/E2E-NOTES.md` login facts or env vars `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD`.
+  Without one, the walk runs anonymous-only and records authed pages as blocked.
+- **One runner at a time, on the integration branch.** Run `/learn-app` after merges on main (or a
+  dedicated notebook branch) — never concurrently in two sessions or on parallel feature branches
+  (question numbering and INDEX edits collide).
+
+**CI nudge (recommended):** copy `examples/notebook-staleness.yml` into the repo's
+`.github/workflows/` — every PR that changes source but not `docs/product/` gets a non-blocking
+warning to run `/learn-app`.
+
 ## Safety properties
 
 - **Read-only walks.** The walker stops before ANY submit/create/delete — write behavior is learned
@@ -64,6 +76,28 @@ knowledge — the test only counts if the answer key is in YOUR head:
 | Drift loop | Rename/add a route on a scratch branch → `/learn-app` | Flags the change; files a question or updates the note |
 
 If all seven pass, trust it on the repos that matter.
+
+## Deferred improvements (TODO — each with its trigger)
+
+Agreed with the product owner (2026-07-06) as future work, deliberately not built yet:
+
+1. **Audit mode** — periodically (monthly-ish) sample ~20 random `[code]` claims from a real
+   notebook, re-verify them against the source, and publish an accuracy % in INDEX's confidence
+   block. Trigger: once notebooks are in steady production use. (Until then the human's manual
+   spot-checks are the audit.)
+2. **Run telemetry** — a "Last run" block in INDEX: date, mode, shards, notes touched, new/folded
+   questions, and the ledger answer-rate, so loop health is visible. Trigger: same as above.
+3. **Mechanical write-block on the walk** — network-level interception that blocks every non-GET
+   request except the login call, underneath the existing prompt rule + test-account requirement.
+   Defense in depth: a misread instruction becomes harmless. Trigger: before walks run unattended
+   or against shared environments.
+4. **Workflow-engine migration** — move the deterministic loop (census → shard → checkpoint →
+   assemble → tally) from prose instructions to the Workflow tool; agents keep the judgment work.
+   Trigger: the day runs go unattended (CI auto-refresh, scheduled runs, teammates running it
+   without supervision). Unattended + prose-interpreted procedure is the bad combination.
+5. **Retrieval at scale** — when a notebook exceeds ~100 notes or the PM agent misses notes that
+   exist, run `/graphify` over `docs/product/` (notes are already cross-linked; the graph is
+   nearly free) or add an embedding index.
 
 ## Pieces (for maintainers)
 

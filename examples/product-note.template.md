@@ -7,6 +7,7 @@ verified_at_commit: <sha> # the commit this note was last checked against
 sources: [code]          # subset of [code, walk, docs, human]
 open_questions: []       # Q-ids still OPEN in ../open-questions.md, e.g. [Q-012, Q-031]
 timestamp: <YYYY-MM-DD>
+format_version: 1        # note-format version; the format-upgrade step keys off this — do not omit
 ---
 
 # <Module name>

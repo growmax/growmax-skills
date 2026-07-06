@@ -28,7 +28,9 @@ return only a one-screen summary + tally. The notes themselves go to disk.
   (`draft` = code-only → `interviewed` = material assumptions resolved by the human → `stable` =
   code + walk + human all agree), `verified_at_commit` (the sha this note was last checked against),
   `sources` (subset of `[code, walk, docs, human]`), `open_questions` (list of Q-ids still OPEN),
-  `timestamp`. **"Material" assumption, defined:** one whose answer could change a Business-rules
+  `timestamp`, and `format_version: 1` — **the note-format version, currently 1**. Bump the number
+  here (and in the template) whenever the required format changes; the format-upgrade step detects
+  outdated notes by this field, so it must be present on every note you write. **"Material" assumption, defined:** one whose answer could change a Business-rules
   claim or a spec built on this note. A note with zero remaining material assumptions/questions →
   `interviewed`; cosmetic/roadmap questions still open do NOT block promotion.
 - Body sections: **What it is** · **How it works** (the flows, step by step) · **Business rules**
@@ -182,6 +184,14 @@ Inputs: none beyond the notebook itself.
    answer as a `[human: Q-nnn ✓]` fact (keep the human's meaning, tighten the wording); remove the
    Q-id from the note's `open_questions`. If the answer *contradicts* other tagged claims, update
    those too and say so in your summary.
+   **Human-vs-code conflict rule:** the human is the authority on INTENT; the code is the authority
+   on CURRENT BEHAVIOR — disagreements are surfaced, never silently resolved. If the human's answer
+   contradicts what the code demonstrably does, do NOT overwrite the `[code]` behavior claim.
+   Instead: (a) record the intent as `[human: Q-nnn ✓]` ("intended behavior: X"), (b) KEEP the
+   `[code]` claim of what actually happens, and (c) file a NEW discrepancy question — "you said X,
+   but the code does Y — is this a bug to fix, or misremembered?" — and flag the pair in your
+   summary. (This is how the TradeFlow discount-gate fold behaved; it is the required shape, not
+   optional judgment.)
 3. **Clean the ledger (the human scans this file for what's pending — keep it PERMANENTLY small):**
    - Mark the entry `FOLDED` and **move it OUT of `open-questions.md` entirely, into the separate
      archive file `docs/product/open-questions-archive.md`** (create it on first fold, with a
