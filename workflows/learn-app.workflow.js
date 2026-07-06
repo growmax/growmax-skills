@@ -2,15 +2,15 @@ export const meta = {
   name: 'learn-app-v2',
   description: 'Build/refresh the product notebook (docs/product/) — deterministic engine',
   phases: [
-    { title: 'Preflight', detail: 'mode + repo facts (cached, resume-sticky)' },
-    { title: 'Census', detail: 'complete surface/module inventory (data, not files)' },
-    { title: 'Walk', detail: 'sequential read-only live walk, bounded discovery waves' },
-    { title: 'Fold', detail: 'merge human answers (update mode)' },
-    { title: 'Drift', detail: 'honest diff base + affected modules (update mode)' },
-    { title: 'Write', detail: 'parallel scribe shards, budget-guarded waves' },
-    { title: 'Audit', detail: 'sample [code] claims, re-verify vs source' },
-    { title: 'Assembly', detail: 'INDEX/architecture/runbook/ui-patterns/glossary/suggestions + ledger upsert' },
-    { title: 'Verify', detail: 'disk-vs-data set checks, format compliance' },
+    { title: 'Check state', detail: 'mode + repo facts (cached, resume-sticky)' },
+    { title: 'Read code', detail: 'complete surface/module inventory (data, not files)' },
+    { title: 'Explore app', detail: 'sequential read-only live walk, bounded discovery waves' },
+    { title: 'Fold answers', detail: 'merge human answers (update mode)' },
+    { title: 'Find changes', detail: 'honest diff base + affected modules (update mode)' },
+    { title: 'Write notes', detail: 'parallel scribe shards, budget-guarded waves' },
+    { title: 'Fact-check', detail: 'sample [code] claims, re-verify vs source' },
+    { title: 'Assemble notebook', detail: 'INDEX/architecture/runbook/ui-patterns/glossary/suggestions + ledger upsert' },
+    { title: 'Verify format', detail: 'disk-vs-data set checks, format compliance' },
     { title: 'Commit', detail: 'redaction gate + single git commit' },
   ],
 }
@@ -270,7 +270,7 @@ const S = {
 }
 
 // ---------- Phase: Preflight (cached → mode is resume-sticky) ----------
-phase('Preflight')
+phase('Check state')
 const pre = await agent(
   `Read-only preflight for the learn-app engine on the repo at ${A.repoRoot}. Report exactly:
 - headSha: current git HEAD short sha.
@@ -283,7 +283,7 @@ const pre = await agent(
 - overlayFacts: if ${A.repoRoot}/.claude/E2E-NOTES.md exists, a 5-line distillation of its facts (base URL, roles, naming/teardown, gotchas) — NEVER include passwords/tokens/secret values, replace them with '<in E2E-NOTES>'. Else null.
 - minNoteFormatVersion: the lowest format_version across ${NB}/modules/*.md frontmatter (null if no notes).
 Do not modify anything.`,
-  { label: 'preflight', phase: 'Preflight', schema: S.PREFLIGHT, model: 'haiku', effort: 'low' }
+  { label: 'preflight', phase: 'Check state', schema: S.PREFLIGHT, model: 'haiku', effort: 'low' }
 )
 const mode = pre.indexExists ? 'update' : 'bootstrap'
 log(`mode=${mode} (hint was ${A.modeHint || 'none'}) · HEAD=${pre.headSha} · maxQId=${pre.maxQId} · answered=${pre.answeredCount} · ui=${pre.uiSurface} · spent=${budget.spent()}`)
@@ -301,12 +301,12 @@ let report = { mode, headSha: pre.headSha }
 // ============================================================ BOOTSTRAP ====
 if (mode === 'bootstrap') {
   // ---------- Census ----------
-  phase('Census')
+  phase('Read code')
   let census
   if (pre.manifestSeededAt && pre.manifestSeededAt === pre.headSha) {
     census = await agent(
       `Load the existing census from ${MANIFEST} (it was seeded at the current HEAD, so it is fresh). Convert its surfaces into the requested structure (id, route, method, rw, gatedBy, module) and derive the module list (slug, title, surfaceIds, sourceDirs — infer sourceDirs from the repo layout). List existing product-relevant docs (README, docs/*.md). Read-only.`,
-      { label: 'census:reload', phase: 'Census', schema: S.CENSUS, model: 'haiku', effort: 'low' }
+      { label: 'census:reload', phase: 'Read code', schema: S.CENSUS, model: 'haiku', effort: 'low' }
     )
     log(`census reloaded from fresh manifest · ${census.surfaces.length} surfaces`)
   } else {
@@ -318,7 +318,7 @@ Additionally, for THIS dispatch return the data in the requested structure:
 - existingDocs[]: paths of product-relevant docs worth merging (README, docs/*.md).
 - apiShaped: true if headless API (no rendered pages).
 You are READ-ONLY: return data, write no files.`,
-      { label: 'census:full', phase: 'Census', schema: S.CENSUS, agentType: CENSUS_AGENT, effort: 'high' }
+      { label: 'census:full', phase: 'Read code', schema: S.CENSUS, agentType: CENSUS_AGENT, effort: 'high' }
     )
     log(`census complete · ${census.surfaces.length} surfaces · ${census.modules.length} modules · spent=${budget.spent()}`)
   }
@@ -327,7 +327,7 @@ You are READ-ONLY: return data, write no files.`,
   report.modules = census.modules.map((m) => m.slug)
 
   // ---------- Walk (optional; sequential — one browser) ----------
-  phase('Walk')
+  phase('Explore app')
   const walkObservations = []
   const walkBlocked = []
   if (A.target) {
@@ -344,7 +344,7 @@ You are READ-ONLY: return data, write no files.`,
 Auth: anonymous, OR the dev/test login the repo itself documents in plaintext${pre.overlayFacts ? ` (overlay facts: ${pre.overlayFacts})` : ''}. NEVER type credentials from anywhere else; a page needing auth you don't have → blocked with reason.
 Surfaces (id · route): ${JSON.stringify(batch)}
 Return observations keyed by surfaceId, newly discovered links (route + label + fromSurfaceId), and blocked surfaces.`,
-          { label: `walk:w${wave + 1}`, phase: 'Walk', schema: S.WALK, agentType: WALKER }
+          { label: `walk:w${wave + 1}`, phase: 'Explore app', schema: S.WALK, agentType: WALKER }
         )
         if (!w) continue
         for (const o of w.observations || []) { walkObservations.push(o); walkedIds.add(o.surfaceId) }
@@ -367,11 +367,11 @@ Return observations keyed by surfaceId, newly discovered links (route + label + 
   }
   await agent(
     `Write ${MANIFEST} as a single JSON file (full overwrite) from exactly this payload — pretty-printed, nothing added or removed:\n${JSON.stringify(manifestPayload)}`,
-    { label: 'manifest:write', phase: 'Walk', model: 'haiku', effort: 'low' }
+    { label: 'manifest:write', phase: 'Explore app', model: 'haiku', effort: 'low' }
   )
 
   // ---------- Write (parallel shard waves, budget-guarded) ----------
-  phase('Write')
+  phase('Write notes')
   const shards = chunk(census.modules, census.modules.length > 10 ? A.shardSize : census.modules.length || 1)
   log(`write plan: ${census.modules.length} modules → ${shards.length} shard(s), waves of ≤${A.waveSize}`)
   const shardResults = []
@@ -398,7 +398,7 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
     const results = await parallel(
       wave.map((mods) => {
         const idx = shardIdx++
-        return () => agent(shardPrompt(mods, shardRange(idx)), { label: `shard:${mods.map((m) => m.slug).join(',')}`.slice(0, 60), phase: 'Write', schema: S.SHARD, agentType: SCRIBE })
+        return () => agent(shardPrompt(mods, shardRange(idx)), { label: `shard:${mods.map((m) => m.slug).join(',')}`.slice(0, 60), phase: 'Write notes', schema: S.SHARD, agentType: SCRIBE })
       })
     )
     for (const r of results) if (r) shardResults.push(r)
@@ -412,7 +412,7 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
     log(`⚠ tally mismatch: missing=${t.missing.length} extra=${t.extra.length} dupes=${t.dupes.length} — one remediation dispatch`)
     const missingModules = census.modules.filter((m) => m.surfaceIds.some((id) => t.missing.includes(id)))
     if (missingModules.length && needBudget(A.budgetPerShardEst + A.landingReserve)) {
-      const fix = await agent(shardPrompt(missingModules, shardRange(shardIdx++), `\nREMEDIATION: a prior shard under-covered these surface ids: ${JSON.stringify(t.missing)} — ensure every one is placed/uncategorized/parked in your return.`), { label: 'shard:remediation', phase: 'Write', schema: S.SHARD, agentType: SCRIBE })
+      const fix = await agent(shardPrompt(missingModules, shardRange(shardIdx++), `\nREMEDIATION: a prior shard under-covered these surface ids: ${JSON.stringify(t.missing)} — ensure every one is placed/uncategorized/parked in your return.`), { label: 'shard:remediation', phase: 'Write notes', schema: S.SHARD, agentType: SCRIBE })
       if (fix) shardResults.push(fix)
       t = tally(censusIds, shardResults.map((r) => [...(r.surfacesPlaced || []), ...(r.uncategorized || []), ...((r.parked || []).map((p) => p.id))]))
     }
@@ -421,12 +421,12 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
   log(`tally: ${report.tally}`)
 
   // ---------- Audit (before assembly so its result lands in INDEX via the single writer) ----------
-  phase('Audit')
+  phase('Fact-check')
   let audit = null
   if (A.audit && needBudget(A.landingReserve)) {
     audit = await agent(
       `Audit the notebook at ${NB} (repo ${A.repoRoot}). Deterministic sample: take module notes in alphabetical slug order; from each, take the FIRST claim in 'Business rules' tagged [code]; stop at 10 claims. For each, open the actual source and verify the claim is true. Return checked, correct, wrong[{file, claim, why}]. READ-ONLY — write nothing; your data goes to the assembly stage.`,
-      { label: 'audit:sample', phase: 'Audit', schema: S.AUDIT, model: 'sonnet' }
+      { label: 'audit:sample', phase: 'Fact-check', schema: S.AUDIT, model: 'sonnet' }
     )
     if (audit) log(`audit: ${audit.correct}/${audit.checked} sampled [code] claims verified · wrong=${(audit.wrong || []).length}`)
   } else {
@@ -434,7 +434,7 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
   }
 
   // ---------- Assembly (single writer of top-level files; ledger upsert) ----------
-  phase('Assembly')
+  phase('Assemble notebook')
   await agent(
     `MODE: assembly. Repo: ${A.repoRoot}. Notebook: ${NB}. Timestamp: ${A.timestamp}. HEAD: ${pre.headSha}. UI surface: ${pre.uiSurface}. Ledger upsert floor: maxQId=${pre.maxQId} (add ONLY entries above this; never modify existing entries or their answers).
 Census summary: ${JSON.stringify({ apiShaped: census.apiShaped, moduleCount: census.modules.length, surfaceCount: censusIds.length, modules: census.modules.map((m) => ({ slug: m.slug, title: m.title, n: m.surfaceIds.length, crossCutting: !!m.crossCutting })) })}
@@ -443,7 +443,7 @@ Shard returns (your inputs for INDEX/ledger/glossary/suggestions): ${JSON.string
 Walk summary: ${JSON.stringify({ observed: walkObservations.length, blocked: walkBlocked.length, target: A.target })}
 Audit result for the Coverage & Confidence block (include an '- Audit:' line if non-null): ${JSON.stringify(audit)}
 Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & Confidence computed from these inputs), architecture.md (5 sections), runbook.md, ${pre.uiSurface ? 'ui-patterns.md, ' : ''}glossary.md, suggestions.md; UPSERT open-questions.md with the shards' questions (id order, template format, status header). Full-file overwrites everywhere except the ledger upsert.`,
-    { label: 'assembly', phase: 'Assembly', agentType: SCRIBE }
+    { label: 'assembly', phase: 'Assemble notebook', agentType: SCRIBE }
   )
   log(`assembly done · spent=${budget.spent()}`)
 
@@ -454,11 +454,11 @@ Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & 
 // ============================================================== UPDATE ====
 if (mode === 'update') {
   // ---------- Fold ----------
-  phase('Fold')
+  phase('Fold answers')
   if (pre.answeredCount > 0) {
     const f = await agent(
       `MODE: fold. Repo: ${A.repoRoot}. Notebook: ${NB}. Fold date: ${A.timestamp}. Discrepancy Q-id range: Q-${FOLD_RANGE.start} .. Q-${FOLD_RANGE.end}. Follow your fold contract exactly (human-vs-code conflict rule; archive file move; answer text replaced with fold-pointer; status header).`,
-      { label: 'fold', phase: 'Fold', schema: S.FOLD, agentType: SCRIBE }
+      { label: 'fold', phase: 'Fold answers', schema: S.FOLD, agentType: SCRIBE }
     )
     report.folded = f ? (f.folded || []).length : 0
     report.contradictions = f ? (f.contradictions || []).length : 0
@@ -469,10 +469,10 @@ if (mode === 'update') {
   }
 
   // ---------- Drift ----------
-  phase('Drift')
+  phase('Find changes')
   const drift = await agent(
     `Compute the notebook drift for ${A.repoRoot}. Base = the last commit that touched docs/product/ (git log -1 --format=%h -- docs/product); if that is missing/unusable, fall back to the newest verified_at_commit in ${NB}/modules/*.md frontmatter and say so (unusableHistory=true if neither works). Then git diff --name-only <base>..HEAD; map changed SOURCE files to module slugs using ${NB}/INDEX.md's module table + notes' sourceDirs/Connections (read-only judgment). Also list newSurfaces (routes/operations added since base — route + suggested module) and removedSurfaces. Exclude docs/product/ itself from 'changed'. READ-ONLY; run only read git commands.`,
-    { label: 'drift', phase: 'Drift', schema: S.DRIFT, model: 'sonnet', effort: 'low' }
+    { label: 'drift', phase: 'Find changes', schema: S.DRIFT, model: 'sonnet', effort: 'low' }
   )
   log(`DRIFT: base=${drift.baseSha} · ${drift.commits || '?'} commits · ${drift.changedFiles || 0} files · ${drift.affectedModules.length} modules affected · new=${(drift.newSurfaces || []).length} removed=${(drift.removedSurfaces || []).length}`)
   report.drift = { base: drift.baseSha, affected: drift.affectedModules.map((m) => m.slug) }
@@ -480,7 +480,7 @@ if (mode === 'update') {
   // ---------- Format-gap scan ----------
   const gaps = await agent(
     `Scan ${NB} for format gaps vs the current contract (read-only, return data): notes missing format_version or with format_version < 1; missing required artifacts (architecture.md, runbook.md${pre.uiSurface ? ', ui-patterns.md' : ''}); INDEX missing the Coverage & Confidence block; ledger missing the status header; notes missing an 'Edge cases & error handling' section. Return gaps[{file, gap}] and notesOutdated[slugs].`,
-    { label: 'format-scan', phase: 'Drift', schema: S.GAPS, model: 'haiku', effort: 'low' }
+    { label: 'format-scan', phase: 'Find changes', schema: S.GAPS, model: 'haiku', effort: 'low' }
   )
   const gapsBySlug = {}
   for (const g of gaps.gaps || []) {
@@ -489,7 +489,7 @@ if (mode === 'update') {
   }
 
   // ---------- Refresh shard waves ----------
-  phase('Write')
+  phase('Write notes')
   const affected = drift.affectedModules
   const outdatedOnly = (gaps.notesOutdated || []).filter((s) => !affected.some((m) => m.slug === s)).map((slug) => ({ slug, changedPaths: [] }))
   const workList = [...affected, ...outdatedOnly]
@@ -519,7 +519,7 @@ New surfaces in your modules: ${JSON.stringify(newForThese)} · Removed: ${JSON.
 Format gaps to backfill in YOUR notes: ${JSON.stringify(mods.map((m) => ({ slug: m.slug, gaps: gapsBySlug[m.slug] || [] })))}
 Your Q-id range: Q-${shardRange(idx).start} .. Q-${shardRange(idx).end}.
 Follow your refresh-shard contract exactly.`,
-              { label: `refresh:${mods.map((m) => m.slug).join(',')}`.slice(0, 60), phase: 'Write', schema: S.SHARD, agentType: SCRIBE }
+              { label: `refresh:${mods.map((m) => m.slug).join(',')}`.slice(0, 60), phase: 'Write notes', schema: S.SHARD, agentType: SCRIBE }
             )
         })
       )
@@ -530,25 +530,25 @@ Follow your refresh-shard contract exactly.`,
     report.newQuestions = refreshResults.reduce((n, r) => n + (r.questions || []).length, 0)
 
     // ---------- Audit (touched notes only) ----------
-    phase('Audit')
+    phase('Fact-check')
     let audit = null
     if (A.audit && needBudget(A.landingReserve)) {
       audit = await agent(
         `Audit ONLY these refreshed notes in ${NB}/modules: ${JSON.stringify(report.refreshed)}. Deterministic sample: first [code]-tagged Business-rules claim per note, max 10; verify each against the source in ${A.repoRoot}. Return checked/correct/wrong. READ-ONLY.`,
-        { label: 'audit:refresh', phase: 'Audit', schema: S.AUDIT, model: 'sonnet' }
+        { label: 'audit:refresh', phase: 'Fact-check', schema: S.AUDIT, model: 'sonnet' }
       )
       if (audit) log(`audit: ${audit.correct}/${audit.checked} verified`)
     }
 
     // ---------- Assembly touch-up ----------
-    phase('Assembly')
+    phase('Assemble notebook')
     await agent(
       `MODE: assembly-touchup. Repo: ${A.repoRoot}. Notebook: ${NB}. Timestamp: ${A.timestamp}. HEAD: ${pre.headSha}. Ledger upsert floor: maxQId=${pre.maxQId}.
 Drift summary: ${JSON.stringify(report.drift)} · Refresh shard returns: ${JSON.stringify(refreshResults)}
 Audit result for the confidence block: ${JSON.stringify(audit)}
 Top-level format gaps to backfill: ${JSON.stringify((gaps.gaps || []).filter((g) => !/modules\//.test(g.file || '')))}
 Follow your assembly-touchup contract: INDEX counts + Coverage & Confidence regenerated; architecture/runbook refreshed only where the drift touched them; ledger upsert of the new questions; suggestions/glossary merged.`,
-      { label: 'assembly:touchup', phase: 'Assembly', agentType: SCRIBE }
+      { label: 'assembly:touchup', phase: 'Assemble notebook', agentType: SCRIBE }
     )
   }
 
@@ -566,7 +566,7 @@ async function commitStage(message) {
 }
 
 async function verifyAuditCommit(rep, censusIds, shardResults, label) {
-  phase('Verify')
+  phase('Verify format')
   const expectedSlugs = shardResults ? shardResults.flatMap((r) => (r.notesWritten || []).map((n) => n.slug)) : null
   let v = await agent(
     `Verify the notebook at ${NB} against reality (read-only, return data):
@@ -577,17 +577,17 @@ async function verifyAuditCommit(rep, censusIds, shardResults, label) {
 - cross-links resolve (no dead relative links).
 - required artifacts exist: architecture.md, runbook.md${pre.uiSurface ? ', ui-patterns.md' : ''}.
 Return pass, violations[{file, rule, detail}], counts{notesOnDisk, untagged, duplicateQIds, deadLinks}.`,
-    { label: 'verify', phase: 'Verify', schema: S.VERIFY, model: 'haiku', effort: 'low' }
+    { label: 'verify', phase: 'Verify format', schema: S.VERIFY, model: 'haiku', effort: 'low' }
   )
   if (v && !v.pass && (v.violations || []).length && needBudget(A.landingReserve)) {
     log(`verify found ${(v.violations || []).length} violation(s) — one backfill pass`)
     await agent(
       `MODE: ${label === 'update' ? 'assembly-touchup' : 'assembly'} (BACKFILL dispatch). Repo: ${A.repoRoot}. Notebook: ${NB}. Timestamp: ${A.timestamp}. Fix EXACTLY these verified violations and nothing else (respect all write-scope and ledger-upsert rules; module-note violations may be fixed in place as full-file rewrites of those notes): ${JSON.stringify(v.violations)}`,
-      { label: 'backfill', phase: 'Verify', agentType: SCRIBE }
+      { label: 'backfill', phase: 'Verify format', agentType: SCRIBE }
     )
     v = await agent(
       `Re-verify the notebook at ${NB} — same checks as before, return the same structure.`,
-      { label: 'verify:2', phase: 'Verify', schema: S.VERIFY, model: 'haiku', effort: 'low' }
+      { label: 'verify:2', phase: 'Verify format', schema: S.VERIFY, model: 'haiku', effort: 'low' }
     )
   }
   rep.verify = v ? { pass: v.pass, violations: (v.violations || []).length } : { pass: false, violations: -1 }
