@@ -66,6 +66,26 @@ cross-cutting pipeline/flows note — the chain diagram, the state machines, who
 each step, and the handoffs — cross-linked from every participating module note. A repo with a
 document pipeline but no flows note is an INCOMPLETE bootstrap. (Zero-surface cross-cutting notes
 are how this is done; see the tally rules.)
+
+**ui-patterns.md (REQUIRED when the repo has a UI surface — web pages or mobile screens; skip for
+headless APIs):** `docs/product/ui-patterns.md` — how a screen is built HERE, so any future screen
+matches the house style instead of drifting. Sections, each claim tagged:
+- **Where the shared units live** — the component library / design-system dirs (e.g. `components/ui`,
+  shared section components, page-level skeletons), and the rule of thumb for when to reuse vs create.
+- **Design tokens & theming** — where colors/spacing/typography/radii come from (token package,
+  Tailwind config, CSS vars) and whether hardcoding values is a violation of the observed convention.
+- **Anatomy of a screen** — dissect ONE representative existing screen: its container/layout shape,
+  heading pattern, section chrome, data-fetch + loading/empty/error states. This is the "copy the
+  neighbour" reference.
+- **Recurring patterns** — forms (library + validation), lists/tables, modals/sheets, navigation,
+  state management, data-fetching conventions (client/server split if Next.js/RSC).
+- **How to build a new screen the house way** — a short checklist DERIVED from the above (reuse X,
+  token Y, pattern Z), so "how should a UI be built here?" has a written answer.
+- **Anti-patterns observed** — places where existing code deviates from its own dominant convention
+  (inline styles beside a token system, a forked near-copy of a shared component) — tagged
+  `[suggestion]`, mirrored into suggestions.md when material.
+Static code reading establishes this note; a live walk upgrades it with `[walk]` evidence of the
+rendered result. INDEX links it next to architecture.md.
 - **Every factual claim ends with a provenance tag:** `[code]`, `[walk]`, `[docs]`,
   `[human: Q-014 ✓]`, or `[ASSUMPTION, conf: low|med|high]`. An untagged claim is a defect.
   Stating an ASSUMPTION in the voice of fact is THE disqualifying defect — when unsure, it's an
@@ -76,6 +96,22 @@ facts everything else hangs on, pointer to the ledger ("N questions open"). This
 core memory; if it grows past the cap, cut detail from INDEX (it lives in the notes), never the
 module list. **Every count in INDEX** (surfaces, questions, modules) must correspond to an
 enumerable set in the notebook or manifest — never assert a number you can't point to a list for.
+
+**Coverage & Confidence block (REQUIRED in INDEX, all numbers computed by counting — never estimated):**
+```
+## Coverage & confidence
+- Surfaces: <placed>/<census total> placed (<pct>%) — denominator: docs/nav-manifest.json
+- Claims by source: [code] <n> · [docs] <n> · [walk] <n> · [human ✓] <n> · [ASSUMPTION] <n>
+- Notes by status: draft <n> · interviewed <n> · stable <n>
+- Questions: <n> OPEN · <k> folded
+- Confidence: <LOW|MEDIUM|HIGH> — <one honest sentence why>
+- To raise it: <the concrete next step — e.g. "run /learn-app <url> for a live walk ([walk] is 0)";
+  "answer Q-001/Q-003 (money-path assumptions)">
+```
+Tier rule (mechanical, no judgment): **LOW** = surfaces <100% placed OR any module note missing.
+**MEDIUM** = 100% placed but walk-less AND human-less (code+docs only — behavior claims unverified
+against the running app or the human). **HIGH** = 100% placed AND ([walk] or [human ✓] evidence
+exists on every money-path/load-bearing module). State which modules are blocking HIGH.
 
 **open-questions.md** (template `examples/open-questions.template.md`) — append-only entries:
 ```
