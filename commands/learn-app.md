@@ -186,9 +186,14 @@ load-bearing, and bumps note `status` (a note whose material assumptions are all
 `interviewed`; code+walk+human confirmed → `stable`). No answered entries → skip, say so.
 
 ### Phase U2 — Drift check (subagent: `flow-census`, then `product-scribe` refresh mode)
-1. Re-dispatch `flow-census` (or, cheaper when git history is clean: diff routes/schema/models
-   changed since the oldest `verified_at_commit` across notes — `git diff --stat <sha>..HEAD` on the
-   route/schema dirs is often enough to scope which modules moved).
+1. **Pick the honest drift base first:** the commit where the notebook itself was last
+   written/updated (find it via `git log -- docs/product/`), NOT the frontmatter
+   `verified_at_commit` when the two disagree — notes document everything up to their own commit,
+   so diffing from an older sha re-flags work the notebook already covers. Sanity-check with
+   ancestry; when in doubt, use the newer of the two and say so.
+2. Re-dispatch `flow-census` (or, cheaper when git history is clean: diff routes/schema/models
+   changed since that base — `git diff --stat <base>..HEAD` on the route/schema dirs is often
+   enough to scope which modules moved).
 2. Dispatch `product-scribe` in **refresh** mode with the delta: it updates affected notes'
    `[code]` claims, flips their `status` back to `draft` where behavior may have changed, sets the
    new `verified_at_commit`, and writes NEW ledger questions for anything whose intent it can't
