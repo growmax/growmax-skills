@@ -140,11 +140,14 @@ Allow an `uncategorized` bucket for leftovers, triaged at synthesis.
 
 ### Phase B2 — Live walk (subagent: `nav-cartographer`, only if target given & reachable)
 **Walk identity — dedicated dev/test account only, NEVER a real user.** Resolve credentials in
-this order: (a) the login facts in `.claude/E2E-NOTES.md`; (b) env vars `LEARN_APP_TEST_EMAIL` /
-`LEARN_APP_TEST_PASSWORD`; (c) neither present → walk **anonymous-only**, record every authed
-surface as `blocked (no test account)`, and tell the human how to provide one (E2E-NOTES or the
-env vars). Never prompt for, guess, or reuse personal credentials. (A network-level write-block is
-a planned hardening on top of this — see the deferred-improvements list in `docs/learn-app.md`.)
+this order: (a) **env vars `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD`** (the primary,
+secret-safe home — values live in the shell/.env.local, never in git); (b) the login facts in
+`.claude/E2E-NOTES.md` (legacy fallback); (c) neither present → walk **anonymous-only**, record
+every authed surface as `blocked (no test account)`, and tell the human how to provide one.
+The notebook's `runbook.md` documents the env var NAMES in its "Logins & test data" section so the
+convention is discoverable — but NEVER the values (runbook is committed). Never prompt for, guess,
+or reuse personal credentials. (A network-level write-block is a planned hardening on top of this —
+see the deferred-improvements list in `docs/learn-app.md`.)
 
 Breadth-first burn-down of the frontier in batches of **5–8 surfaces** per dispatch, exactly as in
 `/app-cartograph` Phase 1, with two overrides:

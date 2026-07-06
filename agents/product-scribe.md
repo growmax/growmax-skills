@@ -83,6 +83,9 @@ CI configs, and any launch config — provenance-tagged like everything else. Se
   where they're set. **NEVER copy values or secrets** — names and source-of-truth location only.
 - **Logins & test data** — WHERE dev credentials/seed users are documented (file/doc pointer), and
   only repeat a credential verbatim if the repo itself already documents it in plain text.
+  **Always include the walk-account convention:** "the /learn-app live walk authenticates via env
+  vars `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD` — set them in your shell or a gitignored
+  .env.local; use a dedicated dev/test user, never a real account." Names only — NEVER values.
 - **Tests & checks** — how to run the test suites, typecheck, lint (the repo's own commands).
 - **Gotchas** — non-obvious facts the repo reveals (port collisions, "runs on 5433 not 5432",
   services that must start first, platform quirks) — each tagged; unknown startup steps → ledger question.

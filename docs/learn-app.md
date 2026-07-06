@@ -38,9 +38,11 @@ Then, any time after:
 - Re-run `/learn-app` after answering, or after a release (it detects what changed).
 
 **Two operating rules:**
-- **Live walks use a dedicated dev/test account, never a real user.** Provide it via
-  `.claude/E2E-NOTES.md` login facts or env vars `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD`.
-  Without one, the walk runs anonymous-only and records authed pages as blocked.
+- **Live walks use a dedicated dev/test account, never a real user.** Primary home: env vars
+  `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD` (shell or gitignored `.env.local` — values
+  never enter git; the notebook's `runbook.md` documents the names so it's discoverable).
+  `.claude/E2E-NOTES.md` login facts work as a fallback. Without either, the walk runs
+  anonymous-only and records authed pages as blocked.
 - **One runner at a time, on the integration branch.** Run `/learn-app` after merges on main (or a
   dedicated notebook branch) — never concurrently in two sessions or on parallel feature branches
   (question numbering and INDEX edits collide).
