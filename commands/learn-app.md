@@ -149,6 +149,34 @@ convention is discoverable — but NEVER the values (runbook is committed). Neve
 or reuse personal credentials. (A network-level write-block is a planned hardening on top of this —
 see the deferred-improvements list in `docs/learn-app.md`.)
 
+**Walk PRIORITY-FIRST, never file-order (big apps are never fully walkable in one sitting).**
+Order the frontier into tiers and burn them down in tier order:
+- **Tier 1** — write surfaces (W) on money-path/document modules + any surface backing a
+  low-confidence or `[ASSUMPTION]`-tagged claim.
+- **Tier 2** — remaining write surfaces, then read surfaces of money-path modules.
+- **Tier 3** — the long tail (read-only lists, static pages). It is legitimate for Tier 3 to stay
+  unwalked forever; the Coverage block reports `walked X/Y (priority tiers 1–2 complete)` honestly.
+
+**Session walk cap + the codified stop default.** Plan at most **~8 walk batches per session**;
+if the context-health guard trips (or the cap is reached) mid-walk, do NOT improvise a menu of
+options — the DEFAULT is: **fold the walked evidence into the notebook now → commit → print the
+one-line resume instruction** (a fresh session continues from the first unwalked surface). Only
+deviate from that default if the human explicitly asks. Partial walks are first-class: walked
+surfaces upgrade their notes to `[walk]` even when the walk is incomplete.
+
+**Walk findings routing (bugs seen live are gold — file them durably, never only in chat):**
+- Every defect the walk reveals (client/schema mismatch, data corruption symptoms, broken page,
+  swallowed error, missing disabled-state) → a **severity-ranked entry in `suggestions.md`** AND a
+  `[walk]`-tagged correction in the affected module note (if the code-only claim was wrong, fix the
+  claim and say the walk disproved it).
+- **Data-integrity findings escalate immediately** (tell the human in the moment, with the
+  read-only diagnostic query) — they may indicate live corruption that ages badly.
+- Intent unclear ("is this enum swap a migration artifact or a bug?") → ledger question as usual.
+
+**Working-tree hygiene:** walk screenshots and artifacts go to the SCRATCH directory only — never
+the repo. Before finishing the session, verify no stray `page-*.png`/walk artifacts landed in the
+working tree; remove any that did. The notebook + manifest are the only files the walk may leave.
+
 Breadth-first burn-down of the frontier in batches of **5–8 surfaces** per dispatch, exactly as in
 `/app-cartograph` Phase 1, with two overrides:
 - **Ledger mode:** surfaces the walker marks `purpose_source: ambiguous` are NOT asked interactively

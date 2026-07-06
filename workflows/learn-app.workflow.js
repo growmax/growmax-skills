@@ -48,6 +48,9 @@ const A = Object.assign(
     shardSize: 8,
     walkBatchSize: 6,
     maxWalkWaves: 3,
+    walkScope: 'priority',   // 'priority' (default: W + gated surfaces first, capped) | 'all'
+    priorityWalkCap: 40,     // max surfaces walked per run under walkScope 'priority'
+    maxWalkBatchesPerRun: 8, // hard batch cap per run — partial walks are first-class; resume continues
     waveSize: 4,             // parallel shards per wave
     audit: true,
     budgetPerShardEst: 120000,
@@ -179,6 +182,24 @@ const S = {
       },
       discovered: { type: 'array', items: { type: 'object', additionalProperties: true } },
       blocked: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      findings: {
+        // Defects observed LIVE (client/schema mismatch, corruption symptoms, broken pages,
+        // swallowed errors). Routed to suggestions.md + module notes by assembly; severity
+        // 'data-integrity' findings are also logged immediately by the script.
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: true,
+          required: ['severity', 'what'],
+          properties: {
+            severity: { type: 'string', enum: ['data-integrity', 'high', 'medium', 'low'] },
+            what: { type: 'string' },
+            surfaceId: { type: 'string' },
+            evidence: { type: 'string' },
+            diagnostic: { type: 'string' },
+          },
+        },
+      },
     },
   },
   SHARD: {
@@ -338,34 +359,61 @@ You are READ-ONLY: return data, write no files.`,
   report.denominator = censusIds.length
   report.modules = census.modules.map((m) => m.slug)
 
-  // ---------- Walk (optional; sequential — one browser) ----------
+  // ---------- Walk (optional; sequential — one browser; PRIORITY-FIRST + batch-capped) ----------
   phase('Explore app')
   const walkObservations = []
   const walkBlocked = []
+  const walkFindings = []
+  let walkPartial = null
   if (A.target) {
-    let frontier = census.surfaces.map((s) => ({ id: s.id, route: s.route, method: s.method }))
+    // Priority tiers: W surfaces first (money-path/write actions), then gated reads, then the tail.
+    const prio = (s) => (s.rw === 'W' ? 0 : s.gatedBy && s.gatedBy !== 'public' ? 1 : 2)
+    let ordered = [...census.surfaces].sort((a, b) => prio(a) - prio(b))
+    if (A.walkScope !== 'all' && ordered.length > A.priorityWalkCap) {
+      ordered = ordered.slice(0, A.priorityWalkCap)
+      log(`walk scope 'priority': walking top ${ordered.length}/${census.surfaces.length} surfaces (W + gated first). Pass walkScope:'all' to walk everything.`)
+    }
+    let frontier = ordered.map((s) => ({ id: s.id, route: s.route, method: s.method }))
     const walkedIds = new Set()
     const knownRoutes = new Set(census.surfaces.map((s) => s.route))
-    for (let wave = 0; wave < A.maxWalkWaves && frontier.length; wave++) {
+    let batchesRun = 0
+    outer: for (let wave = 0; wave < A.maxWalkWaves && frontier.length; wave++) {
       const batches = chunk(frontier, A.walkBatchSize)
       const discoveredThisWave = []
       for (const batch of batches) {
-        if (!needBudget(A.landingReserve)) break
+        if (batchesRun >= A.maxWalkBatchesPerRun) {
+          walkPartial = `batch cap ${A.maxWalkBatchesPerRun} reached — walked ${walkedIds.size}/${ordered.length} planned surfaces; resume continues from the rest`
+          log(`walk paused: ${walkPartial}`)
+          break outer
+        }
+        if (!needBudget(A.landingReserve)) {
+          walkPartial = `budget guard — walked ${walkedIds.size}/${ordered.length} planned surfaces`
+          break outer
+        }
         const w = await agent(
           `Walk these ${batch.length} surfaces of the app at ${A.target} (repo: ${A.repoRoot}) per your contract — READ-ONLY, ledger mode: never execute any write/submit/delete (walk up to it and stop; record it in writesAt), never ask interactive questions (mark unclear purposes purposeConfidence='ambiguous').
 Auth: anonymous, OR the dev/test login the repo itself documents in plaintext${pre.overlayFacts ? ` (overlay facts: ${pre.overlayFacts})` : ''}. NEVER type credentials from anywhere else; a page needing auth you don't have → blocked with reason.
 Surfaces (id · route): ${JSON.stringify(batch)}
-Return observations keyed by surfaceId, newly discovered links (route + label + fromSurfaceId), and blocked surfaces.`,
+ALSO return findings[]: any defect you OBSERVE live (client/schema mismatch, error responses on valid actions, corruption symptoms like impossible enum values, broken/blank pages, swallowed errors shown as fake empty states) — severity 'data-integrity'|'high'|'medium'|'low', with evidence and (for data issues) a READ-ONLY diagnostic query if you can derive one. Observing is not fixing: never mutate anything.
+HYGIENE: save any screenshots to the scratch/temp directory ONLY — never into the repo working tree.
+Return observations keyed by surfaceId, newly discovered links (route + label + fromSurfaceId), blocked surfaces, and findings.`,
           { label: `walk:w${wave + 1}`, phase: 'Explore app', schema: S.WALK, agentType: WALKER }
         )
+        batchesRun++
         if (!w) continue
         for (const o of w.observations || []) { walkObservations.push(o); walkedIds.add(o.surfaceId) }
         for (const b of w.blocked || []) walkBlocked.push(b)
+        for (const f of w.findings || []) {
+          walkFindings.push(f)
+          if (f.severity === 'data-integrity') log(`🚨 DATA-INTEGRITY finding (surface ${f.surfaceId || '?'}): ${f.what}${f.diagnostic ? ' · diagnostic: ' + f.diagnostic : ''}`)
+        }
         for (const d of w.discovered || []) if (d.route && !knownRoutes.has(d.route)) { knownRoutes.add(d.route); discoveredThisWave.push(d) }
-        log(`walk wave ${wave + 1}: +${(w.observations || []).length} observed, +${(w.discovered || []).length} discovered · spent=${budget.spent()}`)
+        log(`walk wave ${wave + 1}: +${(w.observations || []).length} observed, +${(w.findings || []).length} findings, +${(w.discovered || []).length} discovered · batches ${batchesRun}/${A.maxWalkBatchesPerRun} · spent=${budget.spent()}`)
+        frontier = frontier.filter((s) => !walkedIds.has(s.id))
       }
       frontier = discoveredThisWave.map((d, i) => ({ id: `discovered.${wave + 1}.${i + 1}`, route: d.route, method: null }))
     }
+    report.walk = { walked: walkedIds.size, planned: ordered.length, total: census.surfaces.length, findings: walkFindings.length, partial: walkPartial }
   } else {
     log('walk skipped (no target — code-only run)')
   }
@@ -375,7 +423,8 @@ Return observations keyed by surfaceId, newly discovered links (route + label + 
     app: A.repoRoot.split('/').pop(), seeded_at_commit: pre.headSha,
     walk: A.target ? `target ${A.target}` : 'none (code-only run)',
     api_only_mapping: census.apiShaped ? 'API-shaped: surface=METHOD path, nav_path null, roles carry the middleware gate' : undefined,
-    surfaces: census.surfaces, walkObservations, walkBlocked,
+    walk_partial: walkPartial || undefined,
+    surfaces: census.surfaces, walkObservations, walkBlocked, walkFindings,
   }
   await agent(
     `Write ${MANIFEST} as a single JSON file (full overwrite) from exactly this payload — pretty-printed, nothing added or removed:\n${JSON.stringify(manifestPayload)}`,
@@ -452,7 +501,8 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
 Census summary: ${JSON.stringify({ apiShaped: census.apiShaped, moduleCount: census.modules.length, surfaceCount: censusIds.length, modules: census.modules.map((m) => ({ slug: m.slug, title: m.title, n: m.surfaceIds.length, crossCutting: !!m.crossCutting })) })}
 Script-verified tally: ${report.tally}
 Shard returns (your inputs for INDEX/ledger/glossary/suggestions): ${JSON.stringify(shardResults)}
-Walk summary: ${JSON.stringify({ observed: walkObservations.length, blocked: walkBlocked.length, target: A.target })}
+Walk summary: ${JSON.stringify({ observed: walkObservations.length, blocked: walkBlocked.length, target: A.target, partial: walkPartial })}
+Walk FINDINGS (defects observed live — rank into suggestions.md by severity, data-integrity first, and reflect each in the affected module note as a [walk]-tagged correction where the code-only claim was wrong): ${JSON.stringify(walkFindings)}
 Audit result for the Coverage & Confidence block (include an '- Audit:' line if non-null): ${JSON.stringify(audit)}
 Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & Confidence computed from these inputs), architecture.md (5 sections), runbook.md, ${pre.uiSurface ? 'ui-patterns.md, ' : ''}glossary.md, suggestions.md; UPSERT open-questions.md with the shards' questions (id order, template format, status header). Full-file overwrites everywhere except the ledger upsert.`,
     { label: 'assembly', phase: 'Assemble notebook', agentType: SCRIBE }
@@ -572,7 +622,7 @@ Follow your assembly-touchup contract: INDEX counts + Coverage & Confidence rege
 async function commitStage(message) {
   phase('Commit')
   return agent(
-    `Commit the notebook in ${A.repoRoot}. Steps, exactly: (1) redaction gate — grep docs/product and docs/nav-manifest.json for Bearer tokens, 'eyJ' JWT prefixes, Authorization headers with values, password-looking strings; ANY finding → do NOT commit, return committed=false with the findings. (2) Otherwise: git add docs/product docs/nav-manifest.json && git commit -m "docs(product): ${message}" — return committed=true and the short sha. Never push. Never add other paths.`,
+    `Commit the notebook in ${A.repoRoot}. Steps, exactly: (1) redaction gate — grep docs/product and docs/nav-manifest.json for Bearer tokens, 'eyJ' JWT prefixes, Authorization headers with values, password-looking strings; ANY finding → do NOT commit, return committed=false with the findings. (2) hygiene sweep — check 'git status --porcelain' for stray walk artifacts (page-*.png, screenshot files, .playwright-mcp/) in the working tree; DELETE any found (they belong in scratch, never the repo) and note it. (3) Then: git add docs/product docs/nav-manifest.json && git commit -m "docs(product): ${message}" — return committed=true and the short sha. Never push. Never add other paths.`,
     { label: 'commit', phase: 'Commit', schema: S.COMMIT, model: 'haiku', effort: 'low' }
   )
 }

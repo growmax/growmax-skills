@@ -46,6 +46,8 @@ Verify → Commit. Each phase logs what it did and the tokens spent so far.
 | `waveSize` | 4 | Shards running in parallel per wave |
 | `walkBatchSize` | 6 | Surfaces per walker dispatch (walk is sequential — one browser) |
 | `maxWalkWaves` | 3 | Bounded loop over newly-discovered links |
+| `walkScope` | `priority` | Walk W/write + gated surfaces first, capped at `priorityWalkCap` (40). `all` = everything (a 178-surface app is ~30 batches — plan multiple resumable runs) |
+| `maxWalkBatchesPerRun` | 8 | Hard batch cap per run; the run finishes normally with `walk.partial` set and the next run resumes the rest. Partial walks are first-class — walked evidence lands regardless |
 | `audit` | true | Sample ~10 `[code]` claims, re-verify vs source, accuracy % into INDEX |
 | `budgetPerShardEst` / `landingReserve` | 120k / 150k | Budget guard: a wave starts only if `remaining > wave·est + reserve`; on trip: commit partial + print resume instructions |
 
