@@ -60,10 +60,13 @@ Say which mode you're in and why before doing anything else.
 ```
 docs/product/
   INDEX.md            # ≤200 lines. Table of contents: module list + one-line truths + pointers.
+  architecture.md     # REQUIRED: what the product is for, business use case, tech stack, system shape, auth model
   open-questions.md   # the ledger (template: examples/open-questions.template.md)
   glossary.md         # domain terms, one definition each
   suggestions.md      # ranked gaps/inconsistencies noticed — feeds future work
   modules/<slug>.md   # one OKF-style note per module (template: examples/product-note.template.md)
+                      # + a cross-cutting flows/pipeline note is REQUIRED whenever documents flow
+                      #   into each other across modules (chains, state machines, approvals)
 ```
 Format contract (enforced by `product-scribe`, spot-check it yourself):
 - Every module note carries YAML frontmatter: `type, title, description, status

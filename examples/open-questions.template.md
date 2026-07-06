@@ -8,6 +8,10 @@
 >
 > States: `OPEN` (awaiting you) → `ANSWERED` (you typed something) → `FOLDED` (merged into notes).
 > Q-ids are global and never reused. Max ~8 OPEN per module, highest priority first.
+> Folded entries move to the **Archive** section at the bottom with your answer text replaced by a
+> pointer to the note that now holds the fact — so this top section always shows ONLY what's pending.
+
+**Status: 0 OPEN · 0 answered awaiting fold · 0 folded (archive below).**
 
 ---
 

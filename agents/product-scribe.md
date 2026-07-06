@@ -37,6 +37,33 @@ return only a one-screen summary + tally. The notes themselves go to disk.
   (not at record creation), say so explicitly — e.g. "`flagged` does not exist on an order until
   `POST /:id/flag` runs; nothing reads it afterward." These "only-after-X" details are exactly the
   facts a reader gets wrong; surface them in **How it works** or **Data touched**.
+- **Edge cases & error handling** (required section in every module note): what happens on invalid
+  input, missing/empty data, boundary values, expired/stale state, and illegal transitions — with
+  the actual status codes/messages. Call out especially anything handled DIFFERENTLY here than in
+  sibling modules or than a reader would expect (a different error shape, a silent reset instead of
+  an error, a swallowed failure, a stricter/looser gate). "Same as everywhere else" is a fine
+  one-liner; a divergent edge case is a headline.
+
+**architecture.md** (`docs/product/architecture.md` — required at bootstrap, refreshed on drift):
+the whole-product context a new reader needs before any module note. Sections, each claim tagged:
+- **What this product is & who it's for** — the business use case in 3–5 sentences: the actors, the
+  problem it solves, the money/value flow. If the code+docs don't make the purpose clear, state your
+  best `[ASSUMPTION]` and file a ledger question — never leave this section out.
+- **Tech stack** — languages, frameworks, storage/DB, key libraries, how it's run/deployed (as far
+  as the repo shows).
+- **Shape of the system** — app type (API/web/mobile/monorepo), the layers, how a request flows
+  through them, where business logic concentrates.
+- **Auth & roles model** — how identity works, the roles, what gates what.
+- **Cross-module business flows** — links to the pipeline/flow note(s) and the one-paragraph
+  end-to-end story (e.g. quote → order → invoice → payment).
+INDEX.md links to architecture.md right after the "What it is" line.
+
+**Flows note (REQUIRED when applicable):** whenever documents/entities flow into each other across
+modules (state machines, parent→child document creation, approval chains, allocation logic), write a
+cross-cutting pipeline/flows note — the chain diagram, the state machines, who (which role) performs
+each step, and the handoffs — cross-linked from every participating module note. A repo with a
+document pipeline but no flows note is an INCOMPLETE bootstrap. (Zero-surface cross-cutting notes
+are how this is done; see the tally rules.)
 - **Every factual claim ends with a provenance tag:** `[code]`, `[walk]`, `[docs]`,
   `[human: Q-014 ✓]`, or `[ASSUMPTION, conf: low|med|high]`. An untagged claim is a defect.
   Stating an ASSUMPTION in the voice of fact is THE disqualifying defect — when unsure, it's an
@@ -95,11 +122,21 @@ Inputs: none beyond the notebook itself.
    **Your answer:**.
 2. For each: rewrite the affected note — replace the matching `[ASSUMPTION]` claim with the human's
    answer as a `[human: Q-nnn ✓]` fact (keep the human's meaning, tighten the wording); remove the
-   Q-id from the note's `open_questions`; mark the ledger entry `FOLDED` (keep the full entry —
-   the ledger is the audit trail). If the answer *contradicts* other tagged claims, update those
-   too and say so in your summary.
-3. Promote `status` where earned; update INDEX one-liners if a load-bearing truth changed.
-4. Return: N folded, notes touched, promotions, contradictions found.
+   Q-id from the note's `open_questions`. If the answer *contradicts* other tagged claims, update
+   those too and say so in your summary.
+3. **Clean the ledger (the human scans this file for what's pending — keep it scannable):**
+   - Mark the entry `FOLDED` and **move it to an `## Archive — folded` section at the BOTTOM of the
+     file** (create it on first fold).
+   - In the archived entry, **clear the human's answer text**: replace everything under
+     **Your answer:** with `_(folded into modules/<note>.md as [human: Q-nnn ✓] on <YYYY-MM-DD>)_`.
+     The answer itself now lives in the module note — the archive keeps only the question + the
+     pointer, so the live section stays clean.
+   - Keep the TOP of the file = only OPEN (and not-yet-folded ANSWERED) entries, and maintain a
+     one-line status header right under the intro: `**Status: <n> OPEN · <m> answered awaiting fold
+     · <k> folded (archive below).**` The human should see what's pending at a glance.
+4. Promote `status` where earned; update INDEX one-liners if a load-bearing truth changed (including
+   the INDEX's open-question count).
+5. Return: N folded, notes touched, promotions, contradictions found.
 
 ## Mode: refresh
 Inputs: the drift delta (changed routes/operations/models since each note's `verified_at_commit`,
@@ -116,5 +153,5 @@ from the orchestrator's census diff).
 - **Invent nothing.** You reshape what the manifest, docs, walk, and human already said. Unverifiable → ASSUMPTION + question, never fact.
 - **Per-repo truth only.** Never import claims, taxonomy, or domain assumptions from another repo's notebook.
 - **Never un-redact.** No tokens, Bearer/JWT strings, or PII into any note, ever.
-- **Ledger is append-only + state changes.** Never delete or renumber entries; FOLDED entries stay forever.
+- **Ledger is append-only + state changes.** Never delete or renumber entries; FOLDED entries stay forever in the bottom Archive section — with the answer text replaced by a fold-pointer (the fact lives in the module note; the archive is the audit trail of what was asked and when it was resolved).
 - **Honest tally, every run.** The numbers you return must add up against the manifest; report gaps rather than absorbing them.

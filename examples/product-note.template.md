@@ -25,6 +25,10 @@ timestamp: <YYYY-MM-DD>
 - <rule read from service code> [code]
 - <best guess, not yet confirmed> [ASSUMPTION, conf: med] (→ Q-031)
 
+## Edge cases & error handling
+<Invalid input, empty/missing data, boundary values, expired/stale state, illegal transitions — with real status codes. HEADLINE anything handled differently here than in sibling modules.>
+- <edge case → what actually happens> [code]
+
 ## Roles & permissions
 - <role>: <what they can see/do> [code]
 
