@@ -59,11 +59,15 @@ Record per-phase `budget.spent()` from the R1/R4 runs (the engine logs it) to tu
 Same triggers as HARNESS.md (any kit change; any model-version change) — PLUS any edit to
 `workflows/learn-app.workflow.js` or `agents/product-scribe-v2.md`.
 
-## v2 baseline scores (fill on first green run)
+## v2 baseline scores
 | Test | Fixture | args | Result | Notes |
 |---|---|---|---|---|
-| R1-v2 | orderdesk | code-only | _pending_ | vs GROUND-TRUTH.md |
-| R4-v2 | tradeflow | code-only | _pending_ | vs GROUND-TRUTH-R4.md |
-| Shard | tradeflow | shardSize=3,waveSize=2 | _pending_ | 3 shards; vs GROUND-TRUTH-R4 |
+| Shard (engine mechanics) | tradeflow | shardSize=3,waveSize=2, scribe=general-purpose | **PASS** (2026-07-06) | End-to-end: 8 agents, tally OK 17=17, verify pass 0 violations, audit 10/10, 1 commit (33fd7fb), 236k tokens. Sharding path exercised (10 modules → 3 shards / parallel waves). Trap caught: discount-gate units bug flagged as [code] + Q-032 (not stated as fact); pipeline chain + state machines reconstructed; all top-level artifacts written; ledger + Coverage&Confidence well-formed. **Caveat:** ran with the general-purpose scribe carrying the contract inline (validation build learn-app.validation.js) because product-scribe-v2 wasn't yet registered — proves ENGINE mechanics, not the v2 agent's system prompt. |
+| R1/R4-v2 (specialized agent) | orderdesk/tradeflow | code-only, scribe=product-scribe-v2 | _pending plugin 1.9.0 install + session restart_ | vs GROUND-TRUTH{,-R4}.md — the production-agent run |
 | R5 | tradeflow | update | _pending_ | fold + drift + ledger hygiene |
 | Resume | tradeflow | tiny budget | _pending_ | partial → resume → byte-equal |
+
+Notes on the validation build: `scratchpad/pm-validation/learn-app.validation.js` is the shipped
+engine with the scribe pointed at general-purpose + the shard/assembly contract inlined (the only
+change). Delete it once the specialized-agent run is green — it exists only to prove the engine
+before the agent was installable.
