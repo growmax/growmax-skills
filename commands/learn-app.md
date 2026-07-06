@@ -144,13 +144,28 @@ unvisited` (the valid enum value — do NOT invent `unwalked`) and set the manif
 `walk` field to `"none (code-only run)"` so the reason is recorded once. All resulting notes stay
 `status: draft` with `[code]`/`[docs]` claims only.
 
-### Phase B3 — Synthesis (subagent: `product-scribe`)
-Dispatch `product-scribe` in **bootstrap** mode with: the manifest path, the module taxonomy, the
-repo's existing product docs to merge (point it at `docs/` — e.g. business-flow docs, module
-workflow docs, architecture docs), the templates dir, and the scope brief. It reads everything in
-its OWN context and writes the full notebook: module notes, INDEX, glossary, first ledger
-(prioritized, **≤8 OPEN questions per module**), suggestions. It returns a one-screen summary +
-tally (see Phase B4), not the notes themselves.
+### Phase B3 — Synthesis (subagent: `product-scribe`, SHARDED on big apps)
+**Small app (≤ ~10 modules):** one `product-scribe` dispatch in **bootstrap** mode with: the
+manifest path, the module taxonomy, the repo's existing product docs to merge, the templates dir,
+and the scope brief. It reads everything in its OWN context and writes the full notebook.
+
+**Big app (> ~10 modules — shard, or one scribe context drowns):**
+1. Split the taxonomy into batches of **5–8 modules**. Dispatch one `product-scribe` per batch,
+   scoped HARD: only that batch's manifest slice + only the source dirs those modules own. Each
+   shard writes ONLY its `modules/<slug>.md` notes + appends its ledger questions (coordinate Q-id
+   ranges: give each shard a reserved block, e.g. shard 1 = Q-001–Q-020). Shards run sequentially
+   or in small parallel groups; each checkpoints to disk before the next starts.
+2. **Final assembly pass** — one last scribe dispatch that reads ONLY the notes' frontmatter +
+   one-line summaries (not the sources again) and writes INDEX.md, architecture.md, runbook.md,
+   ui-patterns.md, glossary, suggestions, and the Coverage & Confidence block.
+Either path: the scribe returns a one-screen summary + tally (see Phase B4), never the notes.
+
+**Progressive scope on multi-surface monorepos:** when the human scopes the first run to a subset
+of surfaces (e.g. "API only"), record it in INDEX's Coverage block as `Surfaces covered: api ·
+Pending: web-vite, buyer-app, …`. Later `/learn-app` runs see pending surfaces and offer to EXTEND
+the notebook (a scoped bootstrap for the new surface, merging into the same docs/product/) rather
+than redoing what exists. Never let a scoped first run masquerade as whole-platform coverage —
+the confidence block must say what's not covered.
 
 ### Phase B4 — Completeness tally + handoff (you)
 - **Tally check:** every census surface appears in exactly one module note (or `uncategorized`,
