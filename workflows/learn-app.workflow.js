@@ -1,17 +1,21 @@
 export const meta = {
   name: 'learn-app-v2',
   description: 'Build/refresh the product notebook (docs/product/) — deterministic engine',
+  // NOTE: this is the full static MENU of possible phases, always shown in this order for BOTH
+  // run modes. Any single run uses only a subset — the rest are skipped and (in the progress tree)
+  // look identical to "pending". The detail text says which mode each belongs to so a skipped
+  // phase is legible: [build only] and [update only] phases are blank in the other mode.
   phases: [
-    { title: 'Check state', detail: 'mode + repo facts (cached, resume-sticky)' },
-    { title: 'Read code', detail: 'complete surface/module inventory (data, not files)' },
-    { title: 'Explore app', detail: 'sequential read-only live walk, bounded discovery waves' },
-    { title: 'Fold answers', detail: 'merge human answers (update mode)' },
-    { title: 'Find changes', detail: 'honest diff base + affected modules (update mode)' },
-    { title: 'Write notes', detail: 'parallel scribe shards, budget-guarded waves' },
-    { title: 'Fact-check', detail: 'sample [code] claims, re-verify vs source' },
-    { title: 'Assemble notebook', detail: 'INDEX/architecture/runbook/ui-patterns/glossary/suggestions + ledger upsert' },
-    { title: 'Verify format', detail: 'disk-vs-data set checks, format compliance' },
-    { title: 'Commit', detail: 'redaction gate + single git commit' },
+    { title: 'Check state', detail: '[always] mode + repo facts (cached, resume-sticky)' },
+    { title: 'Read code', detail: '[build only] complete surface/module inventory (data, not files)' },
+    { title: 'Explore app', detail: '[build only, needs URL] read-only live walk' },
+    { title: 'Fold answers', detail: '[update only] merge answered ledger questions — SKIPPED if 0 answered' },
+    { title: 'Find changes', detail: '[update only] diff base + affected modules' },
+    { title: 'Write notes', detail: '[always] parallel scribe shards, budget-guarded waves' },
+    { title: 'Fact-check', detail: '[always, if audit on] sample [code] claims, re-verify vs source' },
+    { title: 'Assemble notebook', detail: '[always] INDEX/architecture/runbook/glossary/suggestions + ledger upsert' },
+    { title: 'Verify format', detail: '[always] disk-vs-data set checks, format compliance' },
+    { title: 'Commit', detail: '[always] redaction gate + single git commit' },
   ],
 }
 
@@ -287,6 +291,14 @@ Do not modify anything.`,
 )
 const mode = pre.indexExists ? 'update' : 'bootstrap'
 log(`mode=${mode} (hint was ${A.modeHint || 'none'}) · HEAD=${pre.headSha} · maxQId=${pre.maxQId} · answered=${pre.answeredCount} · ui=${pre.uiSurface} · spent=${budget.spent()}`)
+// State the plan so skipped phases in the tree are expected, not confusing.
+if (mode === 'update') {
+  const skips = ['Read code', 'Explore app']
+  if (pre.answeredCount === 0) skips.push('Fold answers (0 answered)')
+  log(`plan (update): Check state → ${pre.answeredCount > 0 ? 'Fold answers → ' : ''}Find changes → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Phases shown-but-skipped: ${skips.join(', ')}.`)
+} else {
+  log(`plan (build): Check state → Read code${A.target ? ' → Explore app' : ''} → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Shown-but-skipped: Fold answers, Find changes${A.target ? '' : ', Explore app'}.`)
+}
 
 if (!needBudget(A.landingReserve + A.budgetPerShardEst)) {
   return bail('budget too low to start any useful work', null)
