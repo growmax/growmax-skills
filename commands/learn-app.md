@@ -30,9 +30,16 @@ keep your own context thin. Subagents can't spawn subagents — every delegation
 > exist rather than redoing their work.
 
 **Inputs:** `$ARGUMENTS` =
-- **target** — optional web URL or `localhost:port`. Given (and reachable) → the bootstrap includes a
-  live walk. Omitted/unreachable → **code-only bootstrap**: still fully valid, notes are just tagged
+- **target** — optional web URL or `localhost:port`. Given (and reachable) → the run includes a
+  live walk. Omitted/unreachable → **code-only**: still fully valid, notes are just tagged
   `[code]` with `status: draft` until a walk or the human upgrades them.
+  **Auto-detect + confirm (no target given):** before defaulting to code-only, look up the dev
+  port from `docs/product/runbook.md` (or the repo's dev script/launch config) and probe
+  `http://localhost:<port>` with a ~1s timeout — never scan other ports, and NEVER start the app
+  yourself. If something answers AND a human is present, ask ONE invocation-time yes/no: *"Your app
+  appears to be running at localhost:<port> — include the read-only walk?"* Decline, no reply, or
+  headless run → code-only, exactly as before. (This is an invocation-time scope question — the
+  same class as the multi-surface scope gate — and does not violate the never-block-mid-run rule.)
 - **scope** — optional focus brief (e.g. `scope: "checkout, quotes"`). Filters the census frontier
   and lenses the walk, exactly as in `/app-cartograph`.
 
