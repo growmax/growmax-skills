@@ -62,6 +62,8 @@ docs/product/
   INDEX.md            # ≤200 lines. Table of contents: module list + one-line truths + pointers.
   architecture.md     # REQUIRED, 5 sections: what the product is for & who it's for (business use
                       #   case), tech stack, system shape, auth & roles model, cross-module business flows
+  runbook.md          # REQUIRED: how to start/work on the app — prerequisites, setup, exact dev
+                      #   commands + ports, env var NAMES (never values), test commands, gotchas
   ui-patterns.md      # REQUIRED for repos with a UI surface: shared components, design tokens,
                       #   anatomy of a screen, recurring patterns, how-to-build-a-new-screen checklist
   open-questions.md   # the ledger (template: examples/open-questions.template.md)
@@ -75,9 +77,11 @@ Format contract (enforced by `product-scribe`, spot-check it yourself):
 - Every module note carries YAML frontmatter: `type, title, description, status
   (draft|interviewed|stable), verified_at_commit, sources, open_questions` — and an
   **Edge cases & error handling** section (divergent handling headlined).
-- `architecture.md` has all 5 sections; `ui-patterns.md` exists when the repo has a UI surface;
-  INDEX carries the computed **Coverage & confidence** block; `open-questions.md` carries the status
-  header line (`n OPEN · m answered awaiting fold · k folded`) from bootstrap onward.
+- `architecture.md` has all 5 sections; `runbook.md` exists (start commands verified against
+  package.json/compose, env var names only — no secret values); `ui-patterns.md` exists when the
+  repo has a UI surface; INDEX carries the computed **Coverage & confidence** block;
+  `open-questions.md` carries the status header line (`n OPEN · m answered awaiting fold · k folded`)
+  from bootstrap onward.
 - **Every factual claim is provenance-tagged:** `[code]`, `[walk]`, `[docs]`, `[human: Q-nnn ✓]`, or
   `[ASSUMPTION, conf: low|med|high]`. An untagged claim is a bug. An ASSUMPTION stated as fact is
   the disqualifying bug.

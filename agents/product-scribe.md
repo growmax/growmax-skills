@@ -67,6 +67,26 @@ each step, and the handoffs — cross-linked from every participating module not
 document pipeline but no flows note is an INCOMPLETE bootstrap. (Zero-surface cross-cutting notes
 are how this is done; see the tally rules.)
 
+**runbook.md (REQUIRED at bootstrap):** `docs/product/runbook.md` — how to start and work on this
+application, so neither an AI session nor a new human ever re-derives it. Derive from
+`package.json`/workspace scripts, lockfiles, docker-compose, `.env.example`, README/CONTRIBUTING,
+CI configs, and any launch config — provenance-tagged like everything else. Sections:
+- **Prerequisites** — runtime versions, package manager, local services (DB/Redis/etc. and their
+  ports, incl. compose port mappings that differ from defaults).
+- **First-time setup** — install, codegen, migrations/seed steps IF the repo documents them (name
+  the command; do not run anything).
+- **Start the app** — the exact dev command(s), which port each process binds, and the URL to open.
+  Monorepos: one line per app/surface.
+- **Env & config** — the env var NAMES required to boot (from `.env.example`/config readers) and
+  where they're set. **NEVER copy values or secrets** — names and source-of-truth location only.
+- **Logins & test data** — WHERE dev credentials/seed users are documented (file/doc pointer), and
+  only repeat a credential verbatim if the repo itself already documents it in plain text.
+- **Tests & checks** — how to run the test suites, typecheck, lint (the repo's own commands).
+- **Gotchas** — non-obvious facts the repo reveals (port collisions, "runs on 5433 not 5432",
+  services that must start first, platform quirks) — each tagged; unknown startup steps → ledger question.
+INDEX links it right after architecture.md. A stale runbook is worse than none: refresh mode must
+re-verify its commands against package.json/compose whenever those files changed.
+
 **ui-patterns.md (REQUIRED when the repo has a UI surface — web pages or mobile screens; skip for
 headless APIs):** `docs/product/ui-patterns.md` — how a screen is built HERE, so any future screen
 matches the house style instead of drifting. Sections, each claim tagged:
