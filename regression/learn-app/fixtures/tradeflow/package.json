@@ -1,0 +1,12 @@
+{
+  "name": "tradeflow",
+  "version": "1.0.0",
+  "description": "A B2B sales-order pipeline: quote -> order -> invoice -> payment",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

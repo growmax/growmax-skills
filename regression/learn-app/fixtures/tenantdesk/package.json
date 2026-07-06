@@ -1,0 +1,12 @@
+{
+  "name": "tenantdesk",
+  "version": "1.0.0",
+  "description": "Multi-tenant B2B project/task tracker",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

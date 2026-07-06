@@ -1,0 +1,12 @@
+{
+  "name": "orderdesk",
+  "version": "1.0.0",
+  "description": "A mini B2B ordering backend (catalog, carts, orders, invoices).",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
