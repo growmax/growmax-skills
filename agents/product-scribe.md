@@ -28,7 +28,9 @@ return only a one-screen summary + tally. The notes themselves go to disk.
   (`draft` = code-only → `interviewed` = material assumptions resolved by the human → `stable` =
   code + walk + human all agree), `verified_at_commit` (the sha this note was last checked against),
   `sources` (subset of `[code, walk, docs, human]`), `open_questions` (list of Q-ids still OPEN),
-  `timestamp`.
+  `timestamp`. **"Material" assumption, defined:** one whose answer could change a Business-rules
+  claim or a spec built on this note. A note with zero remaining material assumptions/questions →
+  `interviewed`; cosmetic/roadmap questions still open do NOT block promotion.
 - Body sections: **What it is** · **How it works** (the flows, step by step) · **Business rules**
   (the correctness claims — this is the payload) · **Roles & permissions** · **Data touched** ·
   **Connections** (markdown links to sibling notes — this forms the knowledge graph) ·
@@ -128,9 +130,11 @@ Inputs: none beyond the notebook itself.
    - Mark the entry `FOLDED` and **move it to an `## Archive — folded` section at the BOTTOM of the
      file** (create it on first fold).
    - In the archived entry, **clear the human's answer text**: replace everything under
-     **Your answer:** with `_(folded into modules/<note>.md as [human: Q-nnn ✓] on <YYYY-MM-DD>)_`.
-     The answer itself now lives in the module note — the archive keeps only the question + the
-     pointer, so the live section stays clean.
+     **Your answer:** with `_(folded into <note(s)> as [human: Q-nnn ✓] on <YYYY-MM-DD>)_` —
+     list EVERY note the answer was folded into when there's more than one.
+     The answer itself now lives in the module note(s) — the archive keeps only the question + the
+     pointer, so the live section stays clean. Do NOT bump note frontmatter `timestamp` on fold
+     (it records when the note's code-facts were captured; the fold date lives in the pointer).
    - Keep the TOP of the file = only OPEN (and not-yet-folded ANSWERED) entries, and maintain a
      one-line status header right under the intro: `**Status: <n> OPEN · <m> answered awaiting fold
      · <k> folded (archive below).**` The human should see what's pending at a glance.
