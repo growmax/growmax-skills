@@ -38,6 +38,20 @@ one-runner rule applies across BOTH engines).
 Watch the progress groups: Preflight → Census → Walk → Write (shard waves) → Audit → Assembly →
 Verify → Commit. Each phase logs what it did and the tokens spent so far.
 
+## Walking is continuous — and works in update mode too
+
+The v2 walk runs **each batch as a disposable subagent**, so the orchestrator's context stays flat
+no matter how many surfaces — meaning v2 can walk a whole app **in one run without stopping to ask**
+(the only stop is the token budget, which auto-commits + prints a resume line, never asks). This is
+the structural difference from v1, whose walk fills a single session's context and must pause.
+
+The walk runs in **both bootstrap AND update** mode. On an existing notebook, `/learn-app-v2 <url>`
+walks the still-unwalked priority surfaces (money-path first, skipping ones already `[walk]`-tagged
+per the manifest), upgrades those module notes' `[code]` claims to `[walk]`, updates the flow status
+table from flow traces, hardens `ui-patterns.md` from rendered evidence, and routes live findings to
+`suggestions.md`. That is the "raise MEDIUM → HIGH by walking" path, and it no longer requires
+rebuilding the notebook.
+
 ## The knobs (Workflow args — defaults are sensible)
 
 | Knob | Default | What it does |

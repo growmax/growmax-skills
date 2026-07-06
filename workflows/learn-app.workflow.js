@@ -49,8 +49,11 @@ const A = Object.assign(
     walkBatchSize: 6,
     maxWalkWaves: 3,
     walkScope: 'priority',   // 'priority' (default: W + gated surfaces first, capped) | 'all'
-    priorityWalkCap: 40,     // max surfaces walked per run under walkScope 'priority'
-    maxWalkBatchesPerRun: 8, // hard batch cap per run — partial walks are first-class; resume continues
+    priorityWalkCap: 60,     // max surfaces walked per run under walkScope 'priority'
+    // Batch cap is a resource backstop, NOT a context limit: each batch is a disposable subagent,
+    // so the orchestrator context stays flat and the real governor is the token budget (which
+    // auto-commits + resumes, never asks). 30 batches ≈ 180 surfaces in one continuous run.
+    maxWalkBatchesPerRun: 30,
     waveSize: 4,             // parallel shards per wave
     audit: true,
     budgetPerShardEst: 120000,
@@ -94,6 +97,62 @@ const tally = (censusIds, placedLists) => {
   const extra = [...seen.keys()].filter((id) => !censusIds.includes(id))
   const dupes = [...seen.entries()].filter(([, n]) => n > 1).map(([id]) => id)
   return { ok: !missing.length && !extra.length && !dupes.length, missing, extra, dupes }
+}
+
+// runWalk — the shared read-only walk, used by BOTH bootstrap and update. Each batch is a fresh
+// disposable subagent (orchestrator context stays flat → the whole app can be walked in one run;
+// the only stop is the token budget, which auto-commits + resumes, never "asks"). Priority-first,
+// journey-order, harvests observations + flowTraces + uiPatterns + findings. `alreadyWalkedIds`
+// lets update mode skip surfaces the notebook already has [walk] evidence for.
+async function runWalk(surfaces, alreadyWalkedIds) {
+  const R = { observations: [], blocked: [], findings: [], uiPatterns: [], flowTraces: [], partial: null, walkedCount: 0, planned: 0 }
+  if (!A.target) { log('walk skipped (no target — code-only run)'); return R }
+  phase('Explore app')
+  const prio = (s) => (s.rw === 'W' ? 0 : s.gatedBy && s.gatedBy !== 'public' ? 1 : 2)
+  const done = new Set(alreadyWalkedIds || [])
+  let ordered = surfaces.filter((s) => s && s.id && !done.has(s.id)).sort((a, b) => prio(a) - prio(b))
+  if (A.walkScope !== 'all' && ordered.length > A.priorityWalkCap) {
+    ordered = ordered.slice(0, A.priorityWalkCap)
+    log(`walk scope 'priority': top ${ordered.length}/${surfaces.length} surfaces (W + gated first). walkScope:'all' walks everything.`)
+  }
+  R.planned = ordered.length
+  if (done.size) log(`walk: ${done.size} surfaces already have [walk] evidence — skipping them, ${ordered.length} to go`)
+  let frontier = ordered.map((s) => ({ id: s.id, route: s.route, method: s.method }))
+  const walkedIds = new Set()
+  const knownRoutes = new Set(surfaces.map((s) => s.route))
+  let batchesRun = 0
+  outer: for (let wave = 0; wave < A.maxWalkWaves && frontier.length; wave++) {
+    const batches = chunk(frontier, A.walkBatchSize)
+    const discoveredThisWave = []
+    for (const batch of batches) {
+      if (batchesRun >= A.maxWalkBatchesPerRun) { R.partial = `batch cap ${A.maxWalkBatchesPerRun} reached — walked ${walkedIds.size}/${ordered.length}; resume continues from the rest`; log(`walk paused: ${R.partial}`); break outer }
+      if (!needBudget(A.landingReserve)) { R.partial = `budget guard — walked ${walkedIds.size}/${ordered.length}`; break outer }
+      const w = await agent(
+        `Walk these ${batch.length} surfaces of the app at ${A.target} (repo: ${A.repoRoot}) per your contract — READ-ONLY, ledger mode: never execute any write/submit/delete (walk up to it and stop; record it in writesAt), never ask interactive questions (mark unclear purposes purposeConfidence='ambiguous').
+Auth: anonymous, OR the dev/test login the repo itself documents in plaintext${pre.overlayFacts ? ` (overlay facts: ${pre.overlayFacts})` : ''}. NEVER type credentials from anywhere else; a page needing auth you don't have → blocked with reason.
+Surfaces (id · route): ${JSON.stringify(batch)}
+WALK AS JOURNEYS where the surfaces allow: follow the natural user flow across screens (list → detail → cart → checkout, stopping BEFORE any write) — return each journey as a flowTraces[] entry (flow, ordered steps, completedToWriteBoundary). Primary behavior evidence for the flow status table.
+ALSO return uiPatterns[]: rendered-UI evidence (layout chrome, shared components recognized across screens, form/list/table conventions, loading/empty/error states you SAW, convention deviations).
+ALSO return findings[]: any defect OBSERVED live (client/schema mismatch, error on valid actions, corruption symptoms, broken/blank pages, swallowed errors shown as fake empty states) — severity 'data-integrity'|'high'|'medium'|'low', with evidence and (for data issues) a READ-ONLY diagnostic query. Observing is not fixing.
+HYGIENE: screenshots to the scratch/temp directory ONLY — never the repo working tree.
+Return observations (keyed by surfaceId), discovered links (route+label+fromSurfaceId), blocked, uiPatterns, flowTraces, findings.`,
+        { label: `walk:w${wave + 1}`, phase: 'Explore app', schema: S.WALK, agentType: WALKER }
+      )
+      batchesRun++
+      if (!w) continue
+      for (const o of w.observations || []) { R.observations.push(o); walkedIds.add(o.surfaceId) }
+      for (const b of w.blocked || []) R.blocked.push(b)
+      for (const f of w.findings || []) { R.findings.push(f); if (f.severity === 'data-integrity') log(`🚨 DATA-INTEGRITY (surface ${f.surfaceId || '?'}): ${f.what}${f.diagnostic ? ' · diagnostic: ' + f.diagnostic : ''}`) }
+      for (const p of w.uiPatterns || []) R.uiPatterns.push(p)
+      for (const t of w.flowTraces || []) R.flowTraces.push(t)
+      for (const d of w.discovered || []) if (d.route && !knownRoutes.has(d.route)) { knownRoutes.add(d.route); discoveredThisWave.push(d) }
+      log(`walk wave ${wave + 1}: +${(w.observations || []).length} observed, +${(w.findings || []).length} findings, +${(w.discovered || []).length} discovered · batches ${batchesRun}/${A.maxWalkBatchesPerRun} · spent=${budget.spent()}`)
+      frontier = frontier.filter((s) => !walkedIds.has(s.id))
+    }
+    frontier = discoveredThisWave.map((d, i) => ({ id: `discovered.${wave + 1}.${i + 1}`, route: d.route, method: null }))
+  }
+  R.walkedCount = walkedIds.size
+  return R
 }
 
 // ---------- schemas (shallow; mirror the agents' own report contracts) ----------
@@ -373,70 +432,15 @@ You are READ-ONLY: return data, write no files.`,
   report.denominator = censusIds.length
   report.modules = census.modules.map((m) => m.slug)
 
-  // ---------- Walk (optional; sequential — one browser; PRIORITY-FIRST + batch-capped) ----------
-  phase('Explore app')
-  const walkObservations = []
-  const walkBlocked = []
-  const walkFindings = []
-  const walkUiPatterns = []
-  const walkFlowTraces = []
-  let walkPartial = null
-  if (A.target) {
-    // Priority tiers: W surfaces first (money-path/write actions), then gated reads, then the tail.
-    const prio = (s) => (s.rw === 'W' ? 0 : s.gatedBy && s.gatedBy !== 'public' ? 1 : 2)
-    let ordered = [...census.surfaces].sort((a, b) => prio(a) - prio(b))
-    if (A.walkScope !== 'all' && ordered.length > A.priorityWalkCap) {
-      ordered = ordered.slice(0, A.priorityWalkCap)
-      log(`walk scope 'priority': walking top ${ordered.length}/${census.surfaces.length} surfaces (W + gated first). Pass walkScope:'all' to walk everything.`)
-    }
-    let frontier = ordered.map((s) => ({ id: s.id, route: s.route, method: s.method }))
-    const walkedIds = new Set()
-    const knownRoutes = new Set(census.surfaces.map((s) => s.route))
-    let batchesRun = 0
-    outer: for (let wave = 0; wave < A.maxWalkWaves && frontier.length; wave++) {
-      const batches = chunk(frontier, A.walkBatchSize)
-      const discoveredThisWave = []
-      for (const batch of batches) {
-        if (batchesRun >= A.maxWalkBatchesPerRun) {
-          walkPartial = `batch cap ${A.maxWalkBatchesPerRun} reached — walked ${walkedIds.size}/${ordered.length} planned surfaces; resume continues from the rest`
-          log(`walk paused: ${walkPartial}`)
-          break outer
-        }
-        if (!needBudget(A.landingReserve)) {
-          walkPartial = `budget guard — walked ${walkedIds.size}/${ordered.length} planned surfaces`
-          break outer
-        }
-        const w = await agent(
-          `Walk these ${batch.length} surfaces of the app at ${A.target} (repo: ${A.repoRoot}) per your contract — READ-ONLY, ledger mode: never execute any write/submit/delete (walk up to it and stop; record it in writesAt), never ask interactive questions (mark unclear purposes purposeConfidence='ambiguous').
-Auth: anonymous, OR the dev/test login the repo itself documents in plaintext${pre.overlayFacts ? ` (overlay facts: ${pre.overlayFacts})` : ''}. NEVER type credentials from anywhere else; a page needing auth you don't have → blocked with reason.
-Surfaces (id · route): ${JSON.stringify(batch)}
-WALK AS JOURNEYS where the surfaces allow: follow the natural user flow across screens (list → detail → cart → checkout, stopping BEFORE any write) rather than visiting URLs in isolation — return each journey as a flowTraces[] entry (flow name, ordered steps, completedToWriteBoundary). This is the primary behavior evidence for the business-flow status table.
-ALSO return uiPatterns[]: rendered-UI evidence — layout chrome, shared components you recognize across screens, form/list/table conventions, loading/empty/error states you actually SAW, and deviations from the app's own dominant convention.
-ALSO return findings[]: any defect you OBSERVE live (client/schema mismatch, error responses on valid actions, corruption symptoms like impossible enum values, broken/blank pages, swallowed errors shown as fake empty states) — severity 'data-integrity'|'high'|'medium'|'low', with evidence and (for data issues) a READ-ONLY diagnostic query if you can derive one. Observing is not fixing: never mutate anything.
-HYGIENE: save any screenshots to the scratch/temp directory ONLY — never into the repo working tree.
-Return observations keyed by surfaceId, newly discovered links (route + label + fromSurfaceId), blocked surfaces, uiPatterns, flowTraces, and findings.`,
-          { label: `walk:w${wave + 1}`, phase: 'Explore app', schema: S.WALK, agentType: WALKER }
-        )
-        batchesRun++
-        if (!w) continue
-        for (const o of w.observations || []) { walkObservations.push(o); walkedIds.add(o.surfaceId) }
-        for (const b of w.blocked || []) walkBlocked.push(b)
-        for (const f of w.findings || []) {
-          walkFindings.push(f)
-          if (f.severity === 'data-integrity') log(`🚨 DATA-INTEGRITY finding (surface ${f.surfaceId || '?'}): ${f.what}${f.diagnostic ? ' · diagnostic: ' + f.diagnostic : ''}`)
-        }
-        for (const p of w.uiPatterns || []) walkUiPatterns.push(p)
-        for (const t of w.flowTraces || []) walkFlowTraces.push(t)
-        for (const d of w.discovered || []) if (d.route && !knownRoutes.has(d.route)) { knownRoutes.add(d.route); discoveredThisWave.push(d) }
-        log(`walk wave ${wave + 1}: +${(w.observations || []).length} observed, +${(w.findings || []).length} findings, +${(w.discovered || []).length} discovered · batches ${batchesRun}/${A.maxWalkBatchesPerRun} · spent=${budget.spent()}`)
-        frontier = frontier.filter((s) => !walkedIds.has(s.id))
-      }
-      frontier = discoveredThisWave.map((d, i) => ({ id: `discovered.${wave + 1}.${i + 1}`, route: d.route, method: null }))
-    }
-    report.walk = { walked: walkedIds.size, planned: ordered.length, total: census.surfaces.length, findings: walkFindings.length, partial: walkPartial }
-  } else {
-    log('walk skipped (no target — code-only run)')
-  }
+  // ---------- Walk (shared helper; disposable subagents keep orchestrator context flat) ----------
+  const _w = await runWalk(census.surfaces, [])
+  const walkObservations = _w.observations
+  const walkBlocked = _w.blocked
+  const walkFindings = _w.findings
+  const walkUiPatterns = _w.uiPatterns
+  const walkFlowTraces = _w.flowTraces
+  const walkPartial = _w.partial
+  if (A.target) report.walk = { walked: _w.walkedCount, planned: _w.planned, total: census.surfaces.length, findings: walkFindings.length, partial: walkPartial }
 
   // ---------- Manifest (single writer, once) ----------
   const manifestPayload = {
@@ -572,13 +576,37 @@ if (mode === 'update') {
     if (m) (gapsBySlug[m[1]] = gapsBySlug[m[1]] || []).push(g.gap)
   }
 
+  // ---------- Walk in UPDATE mode (upgrade [code]→[walk] on priority/unwalked surfaces) ----------
+  // This is the piece that lets an EXISTING notebook gain live-app evidence — the whole "raise
+  // confidence by walking" path. Reads surfaces from the manifest; skips ones already walked.
+  let uWalk = { observations: [], blocked: [], findings: [], uiPatterns: [], flowTraces: [], partial: null, walkedCount: 0, planned: 0 }
+  const walkObsByModule = {}     // slug -> [observations], so each refresh shard gets only its own
+  const walkedModuleSlugs = new Set()
+  if (A.target) {
+    const mf = await agent(
+      `Read ${MANIFEST} (read-only). Return surfaces[] (id, route, method, rw, gatedBy, module) and alreadyWalked[] = the ids of surfaces that ALREADY have a walkObservation recorded in it.`,
+      { label: 'walk:load-manifest', phase: 'Explore app', schema: { type: 'object', additionalProperties: true, required: ['surfaces'], properties: { surfaces: { type: 'array', items: { type: 'object', additionalProperties: true } }, alreadyWalked: { type: 'array', items: { type: 'string' } } } }, model: 'haiku', effort: 'low' }
+    )
+    const surfaces = (mf && mf.surfaces) || []
+    uWalk = await runWalk(surfaces, (mf && mf.alreadyWalked) || [])
+    // Map each walk observation to its module so shards get only their own evidence, and so
+    // walked-but-undrifted modules still get refreshed (that's how [walk] tags reach their notes).
+    const idToModule = new Map(surfaces.map((s) => [s.id, s.module]))
+    for (const o of uWalk.observations) {
+      const slug = idToModule.get(o.surfaceId)
+      if (slug) { walkedModuleSlugs.add(slug); (walkObsByModule[slug] = walkObsByModule[slug] || []).push(o) }
+    }
+    report.walk = { walked: uWalk.walkedCount, planned: uWalk.planned, findings: uWalk.findings.length, partial: uWalk.partial }
+  }
+
   // ---------- Refresh shard waves ----------
   phase('Write notes')
   const affected = drift.affectedModules
-  const outdatedOnly = (gaps.notesOutdated || []).filter((s) => !affected.some((m) => m.slug === s)).map((slug) => ({ slug, changedPaths: [] }))
-  const workList = [...affected, ...outdatedOnly]
+  const walkedNotAffected = [...walkedModuleSlugs].filter((s) => !affected.some((m) => m.slug === s)).map((slug) => ({ slug, changedPaths: [], walkOnly: true }))
+  const outdatedOnly = (gaps.notesOutdated || []).filter((s) => !affected.some((m) => m.slug === s) && !walkedModuleSlugs.has(s)).map((slug) => ({ slug, changedPaths: [] }))
+  const workList = [...affected, ...walkedNotAffected, ...outdatedOnly]
   if (!workList.length && !(drift.newSurfaces || []).length) {
-    log('no drift and no format gaps — notebook already current')
+    log('no drift, no format gaps, no new walk evidence — notebook already current')
   } else {
     const shards = chunk(workList, workList.length > 10 ? A.shardSize : workList.length || 1)
     log(`refresh plan: ${workList.length} modules → ${shards.length} shard(s)`)
@@ -595,11 +623,13 @@ if (mode === 'update') {
           const idx = i++
           const newForThese = (drift.newSurfaces || []).filter((s) => mods.some((m) => m.slug === (s.module || s.suggestedModule)))
           const removedForThese = (drift.removedSurfaces || []).filter((s) => mods.some((m) => m.slug === s.module))
+          const walkForThese = mods.flatMap((m) => walkObsByModule[m.slug] || [])
           return () =>
             agent(
               `MODE: refresh-shard. Repo: ${A.repoRoot}. Notebook: ${NB}. Timestamp: ${A.timestamp}. New verified_at_commit: ${pre.headSha}. Drift base: ${drift.baseSha}.
 Your assigned modules (write ONLY these ${NB}/modules/<slug>.md): ${JSON.stringify(mods)}
 New surfaces in your modules: ${JSON.stringify(newForThese)} · Removed: ${JSON.stringify(removedForThese)}
+LIVE-WALK evidence for your modules (upgrade matching [code] claims to [walk], correct any the walk disproved, add flow/UI evidence): ${JSON.stringify(walkForThese)}
 Format gaps to backfill in YOUR notes: ${JSON.stringify(mods.map((m) => ({ slug: m.slug, gaps: gapsBySlug[m.slug] || [] })))}
 Your Q-id range: Q-${shardRange(idx).start} .. Q-${shardRange(idx).end}.
 Follow your refresh-shard contract exactly.`,
@@ -630,8 +660,12 @@ Follow your refresh-shard contract exactly.`,
       `MODE: assembly-touchup. Repo: ${A.repoRoot}. Notebook: ${NB}. Timestamp: ${A.timestamp}. HEAD: ${pre.headSha}. Ledger upsert floor: maxQId=${pre.maxQId}.
 Drift summary: ${JSON.stringify(report.drift)} · Refresh shard returns: ${JSON.stringify(refreshResults)}
 Audit result for the confidence block: ${JSON.stringify(audit)}
+Walk this run: ${JSON.stringify({ walked: uWalk.walkedCount, planned: uWalk.planned, partial: uWalk.partial })}
+Walk FINDINGS (rank into suggestions.md, data-integrity first): ${JSON.stringify(uWalk.findings)}
+Walk UI-PATTERN evidence (upgrade ui-patterns.md with [walk] tags): ${JSON.stringify(uWalk.uiPatterns)}
+Walk FLOW TRACES (update the flow status table — flows traced to their write boundary earn [walk] behavior evidence): ${JSON.stringify(uWalk.flowTraces)}
 Top-level format gaps to backfill: ${JSON.stringify((gaps.gaps || []).filter((g) => !/modules\//.test(g.file || '')))}
-Follow your assembly-touchup contract: INDEX counts + Coverage & Confidence regenerated; architecture/runbook refreshed only where the drift touched them; ledger upsert of the new questions; suggestions/glossary merged.`,
+Follow your assembly-touchup contract: INDEX counts + Coverage & Confidence (including Walk: X/Y and the flows table) regenerated; architecture/runbook refreshed only where the drift touched them; ledger upsert of the new questions; suggestions/glossary merged.`,
       { label: 'assembly:touchup', phase: 'Assemble notebook', agentType: SCRIBE }
     )
   }

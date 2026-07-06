@@ -264,6 +264,21 @@ load-bearing, and bumps note `status` (a note whose material assumptions are all
    for anything whose intent it can't infer ("route X appeared in payments since <sha> — what's
    it for?"). After each shard, print one progress line (shard i/s · notes touched · new Qs).
 
+### Phase U2.7 — Walk in UPDATE mode (when a target is given — raises an existing notebook's confidence)
+**Walking is NOT bootstrap-only.** The whole "raise MEDIUM → HIGH by walking" path depends on being
+able to walk a notebook that already exists. When the human passes a URL to `/learn-app` on an
+existing notebook, walk the **still-unwalked, priority-first** surfaces (money-path/write first) —
+read the surface list from the existing `docs/nav-manifest.json`, skip surfaces that already carry
+`[walk]` evidence, and feed the results into the refresh: modules that gain `[walk]` evidence get
+refreshed (their `[code]` claims upgrade to `[walk]`, disproved claims corrected) even if the code
+didn't drift; flow traces update the flow status table; UI evidence upgrades `ui-patterns.md`;
+findings route to `suggestions.md`. Same session cap + codified stop default as Phase B2 (fold
+what's walked → commit → print resume; a fresh session continues from the first unwalked surface
+via the manifest). **Honest limit:** a v1 session walks inside its own context, so it will hit the
+context cap on a large app and stop — for a continuous, uninterrupted walk of a big app use
+`/learn-app-v2` (its walk runs each batch as a disposable subagent, so the orchestrator context
+stays flat and the whole app can be walked in one run).
+
 ### Phase U2.5 — Format upgrade (always, cheap)
 The kit evolves; notebooks built by older versions must catch up on rerun, never require a wipe.
 **Check `format_version` first (deterministic):** the current note format is declared in
