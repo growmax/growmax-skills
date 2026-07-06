@@ -66,7 +66,8 @@ docs/product/
                       #   commands + ports, env var NAMES (never values), test commands, gotchas
   ui-patterns.md      # REQUIRED for repos with a UI surface: shared components, design tokens,
                       #   anatomy of a screen, recurring patterns, how-to-build-a-new-screen checklist
-  open-questions.md   # the ledger (template: examples/open-questions.template.md)
+  open-questions.md   # the LIVE ledger: pending questions only — stays permanently small
+  open-questions-archive.md  # folded history (audit trail); read by nobody in the normal loop
   glossary.md         # domain terms, one definition each
   suggestions.md      # ranked gaps/inconsistencies noticed — feeds future work
   modules/<slug>.md   # one OKF-style note per module (template: examples/product-note.template.md)

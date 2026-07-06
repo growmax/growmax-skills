@@ -182,15 +182,23 @@ Inputs: none beyond the notebook itself.
    answer as a `[human: Q-nnn ✓]` fact (keep the human's meaning, tighten the wording); remove the
    Q-id from the note's `open_questions`. If the answer *contradicts* other tagged claims, update
    those too and say so in your summary.
-3. **Clean the ledger (the human scans this file for what's pending — keep it scannable):**
-   - Mark the entry `FOLDED` and **move it to an `## Archive — folded` section at the BOTTOM of the
-     file** (create it on first fold).
+3. **Clean the ledger (the human scans this file for what's pending — keep it PERMANENTLY small):**
+   - Mark the entry `FOLDED` and **move it OUT of `open-questions.md` entirely, into the separate
+     archive file `docs/product/open-questions-archive.md`** (create it on first fold, with a
+     two-line header saying what it is). The live ledger holds ONLY pending entries + the status
+     header — it must never grow with history, because it's read on every PM-agent invocation and
+     every fold. The archive file is read by nobody in the normal loop; it exists purely as the
+     audit trail.
    - In the archived entry, **clear the human's answer text**: replace everything under
      **Your answer:** with `_(folded into <note(s)> as [human: Q-nnn ✓] on <YYYY-MM-DD>)_` —
      list EVERY note the answer was folded into when there's more than one.
      The answer itself now lives in the module note(s) — the archive keeps only the question + the
-     pointer, so the live section stays clean. Do NOT bump note frontmatter `timestamp` on fold
-     (it records when the note's code-facts were captured; the fold date lives in the pointer).
+     pointer. Do NOT bump note frontmatter `timestamp` on fold (it records when the note's
+     code-facts were captured; the fold date lives in the pointer).
+   - **Q-id uniqueness spans BOTH files:** the next Q-id = 1 + the highest id found in
+     `open-questions.md` AND `open-questions-archive.md`. Never renumber, never reuse.
+   - Migration: if an older notebook carries a bottom `## Archive — folded` section inside
+     `open-questions.md`, move that whole section into the archive file on the next fold/refresh.
    - Keep the TOP of the file = only OPEN (and not-yet-folded ANSWERED) entries, and maintain a
      one-line status header right under the intro: `**Status: <n> OPEN · <m> answered awaiting fold
      · <k> folded (archive below).**` The human should see what's pending at a glance.
@@ -213,5 +221,5 @@ from the orchestrator's census diff).
 - **Invent nothing.** You reshape what the manifest, docs, walk, and human already said. Unverifiable → ASSUMPTION + question, never fact.
 - **Per-repo truth only.** Never import claims, taxonomy, or domain assumptions from another repo's notebook.
 - **Never un-redact.** No tokens, Bearer/JWT strings, or PII into any note, ever.
-- **Ledger is append-only + state changes.** Never delete or renumber entries; FOLDED entries stay forever in the bottom Archive section — with the answer text replaced by a fold-pointer (the fact lives in the module note; the archive is the audit trail of what was asked and when it was resolved).
+- **Ledger is append-only + state changes.** Never delete or renumber entries; FOLDED entries live forever in `open-questions-archive.md` — with the answer text replaced by a fold-pointer (the fact lives in the module note; the archive is the audit trail of what was asked and when it was resolved). The live `open-questions.md` holds pending entries ONLY and stays small forever.
 - **Honest tally, every run.** The numbers you return must add up against the manifest; report gaps rather than absorbing them.
