@@ -224,7 +224,9 @@ the confidence block must say what's not covered.
 ## UPDATE mode
 
 ### Phase U1 — Fold answers (subagent: `product-scribe`, fold mode)
-Dispatch `product-scribe` in **fold** mode. It reads `open-questions.md`, finds entries with a
+Dispatch `product-scribe` in **fold** mode. It reads `open-questions.md` **AND
+`flow-review.md`** (✓/✗ marks on flow stories — the bulk intent-confirmation channel; see the
+scribe's Flow Confirmation Layer), finds entries with a
 human answer (state ANSWERED), rewrites the affected module notes — the matching `[ASSUMPTION]`
 becomes a `[human: Q-nnn ✓]` fact — marks entries FOLDED, updates INDEX.md if the fact is
 load-bearing, and bumps note `status` (a note whose material assumptions are all resolved →

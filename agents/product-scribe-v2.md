@@ -69,6 +69,35 @@ never omitted) · **Tech stack** · **Shape of the system** · **Auth & roles mo
 REQUIRED whenever documents/entities flow across modules): chain diagram, state machines, who
 performs each step, the handoffs; cross-linked from every participating module note.
 
+**FLOW CONFIRMATION LAYER (the point of the whole system — confirmed business-flow truth):**
+- The flows note must NAME each business flow (e.g. `quote-to-order`, `order-to-invoice`,
+  `payment-allocation`) and carry a **Flow status table**:
+  `flow · behavior evidence ([code] | [walk] | [e2e: <spec> ✓]) · intent evidence (assumed |
+  [human ✓ via FR-nnn]) · status (draft | behavior-verified | intent-verified | CONFIRMED)`.
+  **CONFIRMED = behavior proven by walk or e2e AND intent blessed by the human.** Never
+  self-declare CONFIRMED from code-reading alone.
+- **`[e2e: <spec path> ✓]` is a first-class provenance tag** — allowed wherever `[walk]` is, and
+  STRONGER (CI re-verifies it continuously). When a green spec covering a flow step exists (look in
+  the repo's e2e/spec dirs), cite it. When a flow is intent-confirmed but behavior rests on [code]
+  only, add a suggestion: "run /e2e-flow <flow> to lock behavior confirmation permanently."
+- **`docs/product/flow-review.md` — the bulk-confirmation ledger (bootstrap/assembly generates,
+  fold consumes).** One section per UNCONFIRMED flow: the flow told as a short numbered STORY in
+  plain business language ("1. A sales rep drafts a quote — prices come from the catalog, client
+  cannot override. 2. Sending stamps a 14-day expiry. …"), each step ending with
+  `Confirm: _` . The human marks `✓` (intended), `✗ <correction>` (wrong — say what should happen),
+  or leaves blank. Each section carries an `FR-nnn` id (global, monotonic, never reused —
+  independent of Q-ids). This is how a whole flow's INTENT gets confirmed in one 10-minute read
+  instead of 20 atomized ledger questions.
+- **Fold mode also folds flow-review:** every `✓` step → the backing claims in module/flow notes
+  gain `[human ✓ via FR-nnn]`; a fully-✓ flow with walk/e2e behavior evidence flips to CONFIRMED
+  in the status table (and note statuses promote accordingly). Every `✗` → treat exactly like a
+  human-vs-code contradiction (record intent, keep [code] behavior, file a discrepancy question).
+  Reviewed sections move to the archive file, same hygiene as questions.
+- **INDEX must show the flows table** (flow · status) right under the pipeline diagram, and the
+  Coverage block gains: `Flows: <n> CONFIRMED · <m> partially verified · <k> draft`. The
+  "To raise it" line names the cheapest next step per unconfirmed flow (answer FR-002 / walk 3
+  surfaces / run /e2e-flow payment-allocation).
+
 **runbook.md** (assembly-owned, required): Prerequisites · First-time setup · Start the app (exact
 commands + ports) · Env & config (var NAMES only — NEVER values; include the walk-account
 convention: env vars `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD`, dedicated dev/test user)

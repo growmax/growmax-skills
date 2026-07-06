@@ -303,7 +303,7 @@ const pre = await agent(
 - notebookLastCommitSha: last commit that touched docs/product/ (git log -1 --format=%h -- docs/product), or null.
 - manifestSeededAt: the seeded_at_commit value inside ${MANIFEST} if the file exists, else null.
 - maxQId: the highest Q-<number> found in ${NB}/open-questions.md AND ${NB}/open-questions-archive.md (0 if neither exists).
-- answeredCount: entries in open-questions.md (excluding any archive section) whose '**Your answer:**' line has real content (not the empty '_' placeholder).
+- answeredCount: entries in open-questions.md (excluding any archive section) whose '**Your answer:**' line has real content (not the empty '_' placeholder), PLUS any flow-review sections in ${NB}/flow-review.md carrying human ✓/✗ marks (both feed the fold stage).
 - uiSurface: does the repo have a UI surface (web pages/components or mobile screens), true/false.
 - overlayFacts: if ${A.repoRoot}/.claude/E2E-NOTES.md exists, a 5-line distillation of its facts (base URL, roles, naming/teardown, gotchas) — NEVER include passwords/tokens/secret values, replace them with '<in E2E-NOTES>'. Else null.
 - minNoteFormatVersion: the lowest format_version across ${NB}/modules/*.md frontmatter (null if no notes).
@@ -519,7 +519,7 @@ if (mode === 'update') {
   phase('Fold answers')
   if (pre.answeredCount > 0) {
     const f = await agent(
-      `MODE: fold. Repo: ${A.repoRoot}. Notebook: ${NB}. Fold date: ${A.timestamp}. Discrepancy Q-id range: Q-${FOLD_RANGE.start} .. Q-${FOLD_RANGE.end}. Follow your fold contract exactly (human-vs-code conflict rule; archive file move; answer text replaced with fold-pointer; status header).`,
+      `MODE: fold. Repo: ${A.repoRoot}. Notebook: ${NB}. Fold date: ${A.timestamp}. Discrepancy Q-id range: Q-${FOLD_RANGE.start} .. Q-${FOLD_RANGE.end}. Fold BOTH channels: open-questions.md answers AND flow-review.md ✓/✗ marks (Flow Confirmation Layer — ✓ steps gain [human ✓ via FR-nnn], fully-✓ flows with walk/e2e evidence flip to CONFIRMED in the flows status table; ✗ = human-vs-code contradiction shape). Follow your fold contract exactly (archive file move; answer text replaced with fold-pointer; status header).`,
       { label: 'fold', phase: 'Fold answers', schema: S.FOLD, agentType: SCRIBE }
     )
     report.folded = f ? (f.folded || []).length : 0
