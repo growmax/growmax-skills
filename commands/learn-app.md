@@ -194,10 +194,17 @@ load-bearing, and bumps note `status` (a note whose material assumptions are all
 2. Re-dispatch `flow-census` (or, cheaper when git history is clean: diff routes/schema/models
    changed since that base — `git diff --stat <base>..HEAD` on the route/schema dirs is often
    enough to scope which modules moved).
-2. Dispatch `product-scribe` in **refresh** mode with the delta: it updates affected notes'
-   `[code]` claims, flips their `status` back to `draft` where behavior may have changed, sets the
-   new `verified_at_commit`, and writes NEW ledger questions for anything whose intent it can't
-   infer ("route X appeared in payments since <sha> — what's it for?").
+3. **Announce the drift size BEFORE refreshing (always):** tell the human up front — "drift:
+   <n> commits, <m> source files, touching <k> of <total> module notes; plan: <s> shard(s)".
+   A big refresh must never be a surprise mid-run; the human may prefer to defer or scope it.
+4. Dispatch `product-scribe` in **refresh** mode with the delta — **SHARDED exactly like Phase B3
+   when the delta touches > ~10 modules**: one scribe per 5–8 affected modules, scoped to only
+   those modules' notes + their changed files, run with a disk checkpoint after each shard (a
+   half-done refresh is then resumable like everything else); a small delta = one dispatch.
+   Each shard updates affected notes' `[code]` claims, flips their `status` back to `draft` where
+   behavior may have changed, sets the new `verified_at_commit`, and writes NEW ledger questions
+   for anything whose intent it can't infer ("route X appeared in payments since <sha> — what's
+   it for?"). After each shard, print one progress line (shard i/s · notes touched · new Qs).
 
 ### Phase U2.5 — Format upgrade (always, cheap)
 The kit evolves; notebooks built by older versions must catch up on rerun, never require a wipe.
