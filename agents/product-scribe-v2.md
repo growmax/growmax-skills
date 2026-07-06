@@ -106,6 +106,11 @@ convention: env vars `LEARN_APP_TEST_EMAIL` / `LEARN_APP_TEST_PASSWORD`, dedicat
 **ui-patterns.md** (assembly-owned, required when the repo has a UI surface): Where the shared
 units live · Design tokens & theming · Anatomy of one representative screen · Recurring patterns ·
 How to build a new screen the house way (derived checklist) · Anti-patterns observed.
+**The walk's uiPatterns evidence is the PRIMARY source once a walk has run** — upgrade every
+section with `[walk]`-tagged rendered-reality evidence (observed loading/empty/error states,
+components recognized across screens, convention deviations); static code reading is the fallback.
+Likewise the walk's flowTraces are the primary behavior evidence for the flows status table — a
+flow traced to its write boundary earns `[walk]` behavior evidence.
 
 **INDEX.md** (assembly-owned) — hard cap ~200 lines: module table with one-line truths + links,
 5–10 platform-wide facts, links to architecture/runbook/ui-patterns right after "What it is",

@@ -182,6 +182,20 @@ const S = {
       },
       discovered: { type: 'array', items: { type: 'object', additionalProperties: true } },
       blocked: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      uiPatterns: {
+        // Rendered-UI evidence for ui-patterns.md: what the screens ACTUALLY look like/do —
+        // layout chrome, shared components recognized, form/list/table patterns, loading/empty/
+        // error states observed, deviations from the app's own dominant convention.
+        type: 'array',
+        items: { type: 'object', additionalProperties: true, required: ['pattern'], properties: { pattern: { type: 'string' }, surfaceIds: { type: 'array', items: { type: 'string' } }, evidence: { type: 'string' } } },
+      },
+      flowTraces: {
+        // Journeys actually FOLLOWED read-only across screens (e.g. list → detail → cart → up to
+        // checkout submit, stopping before the write). Primary behavior evidence for the flows
+        // note's status table.
+        type: 'array',
+        items: { type: 'object', additionalProperties: true, required: ['flow', 'steps'], properties: { flow: { type: 'string' }, steps: { type: 'array', items: { type: 'string' } }, completedToWriteBoundary: { type: 'boolean' }, notes: { type: 'string' } } },
+      },
       findings: {
         // Defects observed LIVE (client/schema mismatch, corruption symptoms, broken pages,
         // swallowed errors). Routed to suggestions.md + module notes by assembly; severity
@@ -364,6 +378,8 @@ You are READ-ONLY: return data, write no files.`,
   const walkObservations = []
   const walkBlocked = []
   const walkFindings = []
+  const walkUiPatterns = []
+  const walkFlowTraces = []
   let walkPartial = null
   if (A.target) {
     // Priority tiers: W surfaces first (money-path/write actions), then gated reads, then the tail.
@@ -394,9 +410,11 @@ You are READ-ONLY: return data, write no files.`,
           `Walk these ${batch.length} surfaces of the app at ${A.target} (repo: ${A.repoRoot}) per your contract — READ-ONLY, ledger mode: never execute any write/submit/delete (walk up to it and stop; record it in writesAt), never ask interactive questions (mark unclear purposes purposeConfidence='ambiguous').
 Auth: anonymous, OR the dev/test login the repo itself documents in plaintext${pre.overlayFacts ? ` (overlay facts: ${pre.overlayFacts})` : ''}. NEVER type credentials from anywhere else; a page needing auth you don't have → blocked with reason.
 Surfaces (id · route): ${JSON.stringify(batch)}
+WALK AS JOURNEYS where the surfaces allow: follow the natural user flow across screens (list → detail → cart → checkout, stopping BEFORE any write) rather than visiting URLs in isolation — return each journey as a flowTraces[] entry (flow name, ordered steps, completedToWriteBoundary). This is the primary behavior evidence for the business-flow status table.
+ALSO return uiPatterns[]: rendered-UI evidence — layout chrome, shared components you recognize across screens, form/list/table conventions, loading/empty/error states you actually SAW, and deviations from the app's own dominant convention.
 ALSO return findings[]: any defect you OBSERVE live (client/schema mismatch, error responses on valid actions, corruption symptoms like impossible enum values, broken/blank pages, swallowed errors shown as fake empty states) — severity 'data-integrity'|'high'|'medium'|'low', with evidence and (for data issues) a READ-ONLY diagnostic query if you can derive one. Observing is not fixing: never mutate anything.
 HYGIENE: save any screenshots to the scratch/temp directory ONLY — never into the repo working tree.
-Return observations keyed by surfaceId, newly discovered links (route + label + fromSurfaceId), blocked surfaces, and findings.`,
+Return observations keyed by surfaceId, newly discovered links (route + label + fromSurfaceId), blocked surfaces, uiPatterns, flowTraces, and findings.`,
           { label: `walk:w${wave + 1}`, phase: 'Explore app', schema: S.WALK, agentType: WALKER }
         )
         batchesRun++
@@ -407,6 +425,8 @@ Return observations keyed by surfaceId, newly discovered links (route + label + 
           walkFindings.push(f)
           if (f.severity === 'data-integrity') log(`🚨 DATA-INTEGRITY finding (surface ${f.surfaceId || '?'}): ${f.what}${f.diagnostic ? ' · diagnostic: ' + f.diagnostic : ''}`)
         }
+        for (const p of w.uiPatterns || []) walkUiPatterns.push(p)
+        for (const t of w.flowTraces || []) walkFlowTraces.push(t)
         for (const d of w.discovered || []) if (d.route && !knownRoutes.has(d.route)) { knownRoutes.add(d.route); discoveredThisWave.push(d) }
         log(`walk wave ${wave + 1}: +${(w.observations || []).length} observed, +${(w.findings || []).length} findings, +${(w.discovered || []).length} discovered · batches ${batchesRun}/${A.maxWalkBatchesPerRun} · spent=${budget.spent()}`)
         frontier = frontier.filter((s) => !walkedIds.has(s.id))
@@ -424,7 +444,7 @@ Return observations keyed by surfaceId, newly discovered links (route + label + 
     walk: A.target ? `target ${A.target}` : 'none (code-only run)',
     api_only_mapping: census.apiShaped ? 'API-shaped: surface=METHOD path, nav_path null, roles carry the middleware gate' : undefined,
     walk_partial: walkPartial || undefined,
-    surfaces: census.surfaces, walkObservations, walkBlocked, walkFindings,
+    surfaces: census.surfaces, walkObservations, walkBlocked, walkFindings, walkUiPatterns, walkFlowTraces,
   }
   await agent(
     `Write ${MANIFEST} as a single JSON file (full overwrite) from exactly this payload — pretty-printed, nothing added or removed:\n${JSON.stringify(manifestPayload)}`,
@@ -503,6 +523,8 @@ Script-verified tally: ${report.tally}
 Shard returns (your inputs for INDEX/ledger/glossary/suggestions): ${JSON.stringify(shardResults)}
 Walk summary: ${JSON.stringify({ observed: walkObservations.length, blocked: walkBlocked.length, target: A.target, partial: walkPartial })}
 Walk FINDINGS (defects observed live — rank into suggestions.md by severity, data-integrity first, and reflect each in the affected module note as a [walk]-tagged correction where the code-only claim was wrong): ${JSON.stringify(walkFindings)}
+Walk UI-PATTERN evidence (PRIMARY source for ui-patterns.md — upgrade its sections with [walk]-tagged rendered-reality evidence; static code reading is the fallback, the walk is the truth): ${JSON.stringify(walkUiPatterns)}
+Walk FLOW TRACES (journeys actually followed — PRIMARY behavior evidence for the flows note's status table: a fully-traced flow to its write boundary earns behavior evidence [walk]): ${JSON.stringify(walkFlowTraces)}
 Audit result for the Coverage & Confidence block (include an '- Audit:' line if non-null): ${JSON.stringify(audit)}
 Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & Confidence computed from these inputs), architecture.md (5 sections), runbook.md, ${pre.uiSurface ? 'ui-patterns.md, ' : ''}glossary.md, suggestions.md; UPSERT open-questions.md with the shards' questions (id order, template format, status header). Full-file overwrites everywhere except the ledger upsert.`,
     { label: 'assembly', phase: 'Assemble notebook', agentType: SCRIBE }

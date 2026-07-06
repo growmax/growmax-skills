@@ -138,8 +138,10 @@ matches the house style instead of drifting. Sections, each claim tagged:
 - **Anti-patterns observed** — places where existing code deviates from its own dominant convention
   (inline styles beside a token system, a forked near-copy of a shared component) — tagged
   `[suggestion]`, mirrored into suggestions.md when material.
-Static code reading establishes this note; a live walk upgrades it with `[walk]` evidence of the
-rendered result. INDEX links it next to architecture.md.
+Static code reading establishes this note; **the live walk is the PRIMARY source once it runs** —
+rendered-UI pattern evidence (walkUiPatterns / batch harvest) upgrades every section with `[walk]`
+tags, and observed loading/empty/error states + convention deviations take precedence over
+code-inferred guesses. INDEX links it next to architecture.md.
 - **Every factual claim ends with a provenance tag:** `[code]`, `[walk]`, `[docs]`,
   `[human: Q-014 ✓]`, or `[ASSUMPTION, conf: low|med|high]`. An untagged claim is a defect.
   Stating an ASSUMPTION in the voice of fact is THE disqualifying defect — when unsure, it's an

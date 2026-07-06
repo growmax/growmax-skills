@@ -164,6 +164,17 @@ one-line resume instruction** (a fresh session continues from the first unwalked
 deviate from that default if the human explicitly asks. Partial walks are first-class: walked
 surfaces upgrade their notes to `[walk]` even when the walk is incomplete.
 
+**Walk AS JOURNEYS, and harvest UI + flow knowledge (the human clarifies intent; the WALK owns
+discovering behavior):**
+- Where surfaces allow, walk in **journey order** (list → detail → cart → checkout, stopping before
+  any write) instead of isolated URLs, and record each journey as a flow trace — this is the
+  PRIMARY behavior evidence for the flows note's status table (a flow traced to its write boundary
+  earns `[walk]` behavior evidence).
+- Harvest **rendered-UI pattern evidence** per batch (layout chrome, shared components recognized
+  across screens, form/list conventions, loading/empty/error states actually seen, deviations from
+  the app's own convention) and upgrade `ui-patterns.md` with `[walk]` tags — the walk is the truth
+  for UI patterns; static code reading is only the fallback.
+
 **Walk findings routing (bugs seen live are gold — file them durably, never only in chat):**
 - Every defect the walk reveals (client/schema mismatch, data corruption symptoms, broken page,
   swallowed error, missing disabled-state) → a **severity-ranked entry in `suggestions.md`** AND a
