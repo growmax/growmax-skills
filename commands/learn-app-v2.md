@@ -37,6 +37,10 @@ census, shard, write notes, or restate any format rules (those live in
   code-only.
 
 ### 3. Invoke the Workflow tool — exactly once
+**CONSTRUCT the structured args object yourself — NEVER forward the raw `$ARGUMENTS` string.** The
+engine hard-requires `{repoRoot, timestamp, ...}`; a bare `localhost:3000` throws. Parse the user's
+input into: `target` = any URL/`localhost:port` they typed (else null), `scope` = any focus brief,
+`repoRoot` = the absolute path of the current repo, `timestamp` = today as `YYYY-MM-DD`.
 ```
 Workflow({
   scriptPath: "${CLAUDE_PLUGIN_ROOT}/workflows/learn-app.workflow.js",

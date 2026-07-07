@@ -37,7 +37,13 @@ export const meta = {
 // ---------- args & knobs ----------
 // `args` may arrive as an object, a JSON string, or undefined (meta-extraction probe) — normalize.
 let _rawArgs = typeof args !== 'undefined' ? args : {}
-if (typeof _rawArgs === 'string') { try { _rawArgs = JSON.parse(_rawArgs) } catch (e) { _rawArgs = {} } }
+if (typeof _rawArgs === 'string') {
+  const s = _rawArgs.trim()
+  if (s === '' ) _rawArgs = {}
+  else { try { _rawArgs = JSON.parse(s) } catch (e) {
+    throw new Error(`learn-app-v2 received a bare string arg (${JSON.stringify(s)}). This engine needs a STRUCTURED object {repoRoot (absolute path), timestamp 'YYYY-MM-DD', target?, scope?} — the /learn-app-v2 command must CONSTRUCT it, never forward the raw "$ARGUMENTS". A bare "localhost:3000" is a target, but repoRoot and timestamp cannot be inferred from it. See commands/learn-app-v2.md step 3.`)
+  } }
+}
 const A = Object.assign(
   {
     repoRoot: null,          // REQUIRED absolute path to the target repo
@@ -131,6 +137,7 @@ async function runWalk(surfaces, alreadyWalkedIds) {
         `Walk these ${batch.length} surfaces of the app at ${A.target} (repo: ${A.repoRoot}) per your contract — READ-ONLY, ledger mode: never execute any write/submit/delete (walk up to it and stop; record it in writesAt), never ask interactive questions (mark unclear purposes purposeConfidence='ambiguous').
 Auth: anonymous, OR the dev/test login the repo itself documents in plaintext${pre.overlayFacts ? ` (overlay facts: ${pre.overlayFacts})` : ''}. NEVER type credentials from anywhere else; a page needing auth you don't have → blocked with reason.
 Surfaces (id · route): ${JSON.stringify(batch)}
+LIVENESS IS MANDATORY AND HONEST: set liveWalkOccurred=true ONLY if real browser pages actually rendered. If the browser is unavailable/locked/errors ("already in use", launch failure, blank), set liveWalkOccurred=false, put the surfaces in blocked[] with the reason, and return NO observations for them — do NOT substitute static source-reading and label it as a walk observation. A static fallback is worse than an honest "blocked".
 WALK AS JOURNEYS where the surfaces allow: follow the natural user flow across screens (list → detail → cart → checkout, stopping BEFORE any write) — return each journey as a flowTraces[] entry (flow, ordered steps, completedToWriteBoundary). Primary behavior evidence for the flow status table.
 ALSO return uiPatterns[]: rendered-UI evidence (layout chrome, shared components recognized across screens, form/list/table conventions, loading/empty/error states you SAW, convention deviations).
 ALSO return findings[]: any defect OBSERVED live (client/schema mismatch, error on valid actions, corruption symptoms, broken/blank pages, swallowed errors shown as fake empty states) — severity 'data-integrity'|'high'|'medium'|'low', with evidence and (for data issues) a READ-ONLY diagnostic query. Observing is not fixing.
@@ -140,6 +147,16 @@ Return observations (keyed by surfaceId), discovered links (route+label+fromSurf
       )
       batchesRun++
       if (!w) continue
+      const live = w.liveWalkOccurred === true
+      if (!live) {
+        // Browser unavailable → this batch is static-only. Do NOT count as walked, do NOT accept
+        // its observations as [walk] evidence — record the surfaces as blocked so the truth shows.
+        R.browserBlocked = true
+        for (const s of batch) R.blocked.push({ surfaceId: s.id, reason: 'browser unavailable (no live render this batch)' })
+        for (const b of w.blocked || []) R.blocked.push(b)
+        log(`⚠ walk batch NOT LIVE (browser unavailable) — ${batch.length} surfaces recorded blocked, NOT walked; no [walk] evidence produced`)
+        continue
+      }
       for (const o of w.observations || []) { R.observations.push(o); walkedIds.add(o.surfaceId) }
       for (const b of w.blocked || []) R.blocked.push(b)
       for (const f of w.findings || []) { R.findings.push(f); if (f.severity === 'data-integrity') log(`🚨 DATA-INTEGRITY (surface ${f.surfaceId || '?'}): ${f.what}${f.diagnostic ? ' · diagnostic: ' + f.diagnostic : ''}`) }
@@ -152,6 +169,10 @@ Return observations (keyed by surfaceId), discovered links (route+label+fromSurf
     frontier = discoveredThisWave.map((d, i) => ({ id: `discovered.${wave + 1}.${i + 1}`, route: d.route, method: null }))
   }
   R.walkedCount = walkedIds.size
+  if (A.target && R.browserBlocked && R.walkedCount === 0) {
+    R.partial = 'NO LIVE WALK — browser was unavailable/locked the whole run (e.g. "already in use"). 0 surfaces walked; any findings are STATIC only. Fix: run with --isolated playwright-mcp, close sibling browser-driving sessions, or use claude-in-chrome; then re-run.'
+    log(`🛑 ${R.partial}`)
+  }
   return R
 }
 
@@ -218,8 +239,13 @@ const S = {
   WALK: {
     type: 'object',
     additionalProperties: true,
-    required: ['observations'],
+    required: ['observations', 'liveWalkOccurred'],
     properties: {
+      // TRUE only if real browser pages actually rendered this batch. FALSE if the browser was
+      // unavailable/locked and you fell back to static source-reading — in that case return the
+      // surfaces as `blocked` (reason: browser unavailable), NOT as observations. The engine counts
+      // "walked" only from live batches, so a locked browser can never masquerade as a walk.
+      liveWalkOccurred: { type: 'boolean' },
       observations: {
         type: 'array',
         items: {
