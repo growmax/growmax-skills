@@ -40,7 +40,9 @@ status_line="$(grep -m1 -E '^\*\*Status:' docs/product/open-questions.md 2>/dev/
 # command always sits on its own line so it's copy-paste obvious. Prints in every session of a
 # notebook-carrying repo (sessions otherwise pattern-match to loaded context and bypass the agent).
 echo "📓 PRODUCT NOTEBOOK — docs/product/"
-echo "   Ask the \`product-manager\` agent for product/behavior/spec questions (notebook-grounded, cited); read code only to verify."
+echo "   ROUTE by question type (do not answer these yourself from code-skimming):"
+echo "   • 'How does X work / what is correct behavior / write a spec' → \`product-manager\` agent (cited from the notebook; code only to verify)."
+echo "   • 'Should we X or Y / what's the best practice / how should this flow work' (DECISION questions) → \`product-advisor\` agent in consult mode (= /consult): cited current behavior + industry standard + ONE recommendation; recorded rulings land in docs/product/decisions.md and BIND future advice."
 
 if [ -n "$stale_msg" ] || [ "${pending_fold:-0}" -gt 0 ]; then
   echo "   ─────────────────────────────────────────────────────────"
