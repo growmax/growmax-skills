@@ -36,6 +36,11 @@ pending_fold="$(awk '/^## Archive/{exit} /^\*\*Your answer:\*\*/{ans=$0; sub(/^\
 
 status_line="$(grep -m1 -E '^\*\*Status:' docs/product/open-questions.md 2>/dev/null || true)"
 
+# Routing reflex: this line prints in EVERY session of a notebook-carrying repo, fresh or stale.
+# It exists because sessions otherwise pattern-match to loaded context and bypass the PM agent —
+# the exact failure the notebook was built to prevent. Keep it to one line.
+echo "📓 Product notebook: docs/product/ exists. Product/behavior questions ('how does X work', 'what is correct behavior', specs) MUST be answered via the growmax-skills:product-manager agent (notebook-grounded, provenance-cited) — read code only to VERIFY its load-bearing claims, not as the primary source."
+
 out=""
 [ -n "$stale_msg" ] && out="⚠ Product notebook is STALE: ${stale_msg}."
 if [ "${pending_fold:-0}" -gt 0 ]; then
