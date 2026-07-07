@@ -18,8 +18,7 @@ own guarantees hold (see the engine checklist below).
    only from shards, top-level files only from assembly, manifest from its single writer).
 3. **Ledger upsert** — pre-seed an ANSWERED entry in a fixture's `open-questions.md`, run UPDATE,
    confirm assembly did NOT touch it (only fold did) and existing answer text survived.
-4. **Only-commit-commits** — exactly one commit per run; the redaction gate blocks on a planted
-   `Bearer eyJ…` string.
+4. **Finalize discipline** — default run ends STAGED (zero commits; report says so); with args.commit=true exactly one commit; the redaction gate blocks staging/committing on a planted `Bearer eyJ…` string either way.
 
 ## Sharding test (fixtures are 7–9 modules — sharding never triggers naturally)
 Run tradeflow bootstrap with `args.shardSize = 3, waveSize = 2` → 3 shards across 2 waves. Score

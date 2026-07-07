@@ -250,7 +250,7 @@ ruling). UPDATE runs: same dispatch after the refresh's ledger writes. Relay its
 - **Tally check:** every census surface appears in exactly one module note (or `uncategorized`,
   or parked-with-reason). Census count in = notebook coverage out. Report the numbers honestly.
 - **Redaction check:** grep the notebook for `Bearer`, `eyJ`, `Authorization`, obvious PII; scrub.
-- Commit `docs/product/` + the manifest (one commit, message `docs(product): bootstrap notebook`).
+- **Stage** `docs/product/` + the manifest (git add) and STOP — the human reviews (`git diff --staged`) and commits (suggested message `docs(product): bootstrap notebook`). Only auto-commit when the human explicitly asked for it (or an unattended run).
 - Tell the human: where the notebook is, how many questions await them in `open-questions.md`, and
   that the `product-manager` agent is now live for this repo.
 
@@ -315,7 +315,7 @@ artifacts:
 Nothing missing → skip, say so. Existing content is never rewritten by this phase — only gaps filled.
 
 ### Phase U3 — Report (you)
-Commit (`docs(product): fold answers + refresh vs <sha>`). Report: N answers folded, N notes
+**Stage** the changes (git add docs/product docs/nav-manifest.json) — the human commits (suggested message `docs(product): fold answers + refresh vs <sha>`); auto-commit only on explicit ask/unattended runs. Report: N answers folded, N notes
 touched, N new questions, notes promoted/demoted by status, artifacts backfilled by the format
 upgrade (if any).
 

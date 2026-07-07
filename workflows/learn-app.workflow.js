@@ -64,6 +64,8 @@ const A = Object.assign(
     maxWalkBatchesPerRun: 30,
     waveSize: 4,             // parallel shards per wave
     audit: true,
+    commit: false,           // default: redaction-gate + STAGE only; the human reviews and commits.
+                             // true = auto-commit (unattended/scheduled runs only).
     advise: true,            // built-in advisor: new OPEN questions get a 💡 recommendation each run
     adviseCap: 15,           // max entries advised per run (priority order; rest next run)
     advisorAgent: 'growmax-skills:product-advisor',
@@ -596,7 +598,7 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
   for (const wave of chunk(shards, A.waveSize)) {
     const est = wave.length * A.budgetPerShardEst + A.landingReserve
     if (!needBudget(est)) {
-      const c = await commitStage('partial bootstrap — budget guard tripped')
+      const c = await commitStage('partial bootstrap — budget guard tripped') // stages (or commits if args.commit) what exists
       return Object.assign(report, bail(`budget guard before shard wave (needed ~${est}, remaining ${budget.remaining()})`, c && c.sha))
     }
     const results = await parallel(
@@ -788,7 +790,7 @@ if (mode === 'update') {
     for (const wave of chunk(shards, A.waveSize)) {
       const est = wave.length * A.budgetPerShardEst + A.landingReserve
       if (!needBudget(est)) {
-        const c = await commitStage('partial refresh — budget guard tripped')
+        const c = await commitStage('partial refresh — budget guard tripped') // stages (or commits if args.commit) what exists
         return Object.assign(report, bail(`budget guard before refresh wave (needed ~${est}, remaining ${budget.remaining()})`, c && c.sha))
       }
       const results = await parallel(
@@ -872,11 +874,18 @@ Return advised ids, skipped (with reason), and the 2-3 topUnblockers.`,
 }
 
 // ---------- shared closing stages ----------
+// Finalize: redaction gate + hygiene sweep ALWAYS; then STAGE the notebook changes and stop —
+// committing is the human's call (git history stays theirs). args.commit=true opts into
+// auto-commit for unattended/scheduled runs only.
 async function commitStage(message) {
-  phase('Commit')
+  phase('Finalize')
   return agent(
-    `Commit the notebook in ${A.repoRoot}. Steps, exactly: (1) redaction gate — grep docs/product and docs/nav-manifest.json for Bearer tokens, 'eyJ' JWT prefixes, Authorization headers with values, password-looking strings; ANY finding → do NOT commit, return committed=false with the findings. (2) hygiene sweep — check 'git status --porcelain' for stray walk artifacts (page-*.png, screenshot files, .playwright-mcp/) in the working tree; DELETE any found (they belong in scratch, never the repo) and note it. (3) Then: git add docs/product docs/nav-manifest.json && git commit -m "docs(product): ${message}" — return committed=true and the short sha. Never push. Never add other paths.`,
-    { label: 'commit', phase: 'Commit', schema: S.COMMIT, model: 'haiku', effort: 'low' }
+    `Finalize the notebook changes in ${A.repoRoot}. Steps, exactly:
+(1) redaction gate — grep docs/product and docs/nav-manifest.json for Bearer tokens, 'eyJ' JWT prefixes, Authorization headers with values, password-looking strings; ANY finding → do NOT stage or commit anything, return committed=false with the findings.
+(2) hygiene sweep — check 'git status --porcelain' for stray walk artifacts (page-*.png, screenshot files, .playwright-mcp/) in the working tree; DELETE any found (they belong in scratch, never the repo) and note it.
+(3) git add docs/product docs/nav-manifest.json — STAGE the notebook changes. Never add other paths.
+${A.commit ? `(4) git commit -m "docs(product): ${message}" — return committed=true and the short sha. Never push.` : `(4) Do NOT commit — the human reviews and commits. Return committed=false, sha=null, and in notes: the staged file count + 'review with: git diff --staged — commit when happy (suggested message: docs(product): ${message})'.`}`,
+    { label: A.commit ? 'finalize:commit' : 'finalize:stage', phase: 'Finalize', schema: S.COMMIT, model: 'haiku', effort: 'low' }
   )
 }
 
@@ -908,8 +917,12 @@ Return pass, violations[{file, rule, detail}], counts{notesOnDisk, untagged, dup
   rep.verify = v ? { pass: v.pass, violations: (v.violations || []).length } : { pass: false, violations: -1 }
 
   const c = await commitStage(`${label} via learn-app-v2 engine`)
-  rep.commit = c && c.committed ? c.sha : `NOT COMMITTED${c && c.redactionFindings && c.redactionFindings.length ? ' — redaction findings: ' + c.redactionFindings.join('; ') : ''}`
+  rep.commit = c && c.committed
+    ? c.sha
+    : c && c.redactionFindings && c.redactionFindings.length
+      ? `BLOCKED — redaction findings: ${c.redactionFindings.join('; ')}`
+      : `STAGED (not committed — review with 'git diff --staged', commit when happy)`
   rep.tokensSpent = budget.spent()
-  log(`done: verify.pass=${rep.verify.pass} · commit=${rep.commit} · spent=${rep.tokensSpent}`)
+  log(`done: verify.pass=${rep.verify.pass} · ${rep.commit} · spent=${rep.tokensSpent}`)
   return rep
 }
