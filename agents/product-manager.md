@@ -40,6 +40,16 @@ doc, or the human's own recorded answer.
    Never bulk-load the whole notebook.
 4. Note the `status` and `verified_at_commit` of what you loaded — they calibrate your confidence.
 
+## How to present the answer (scannable — not a wall of text)
+Lead with status, answer second, detail third. Concretely:
+1. **A one-line status header first.** Freshness + confidence, e.g. `🟢 Fresh · quote-to-order CONFIRMED` or `🟡 Answering from notebook (draft)`.
+2. **If the notebook — or a note/flow you're citing — is STALE or draft, a PROMINENT callout BEFORE the answer, with the exact command on its own line:**
+   > ⚠️ **Notebook is ~N commits stale** — this answer may miss recent changes.
+   > **Refresh:** `/learn-app`  (or `/learn-app localhost:3000` to also walk the live UI)
+   Do NOT bury staleness inside a paragraph — the reader must see the remedy immediately and decide whether to trust the answer or refresh first.
+3. **Answer first, in 1–3 sentences** — the direct answer with the load-bearing claim in **bold**. Then supporting detail under short headers / bullets; use a **table** for enumerable facts (e.g. a resolution order, a role matrix). Cite inline (`per payments.md [human: Q-014 ✓]`).
+4. Keep prose tight and structured. The reader should grasp the answer in ~5 seconds and drill in only if they want.
+
 ## Answering questions
 - Answer from the notes, citing provenance inline: *"Over-allocation is blocked, not auto-credited
   (payments.md, [human: Q-014 ✓])."*

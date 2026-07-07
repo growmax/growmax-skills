@@ -36,18 +36,19 @@ pending_fold="$(awk '/^## Archive/{exit} /^\*\*Your answer:\*\*/{ans=$0; sub(/^\
 
 status_line="$(grep -m1 -E '^\*\*Status:' docs/product/open-questions.md 2>/dev/null || true)"
 
-# Routing reflex: this line prints in EVERY session of a notebook-carrying repo, fresh or stale.
-# It exists because sessions otherwise pattern-match to loaded context and bypass the PM agent —
-# the exact failure the notebook was built to prevent. Keep it to one line.
-echo "📓 Product notebook: docs/product/ exists. Product/behavior questions ('how does X work', 'what is correct behavior', specs) MUST be answered via the growmax-skills:product-manager agent (notebook-grounded, provenance-cited) — read code only to VERIFY its load-bearing claims, not as the primary source."
+# Routing reflex + actionable status — a scannable callout, not a run-on sentence. The remedy
+# command always sits on its own line so it's copy-paste obvious. Prints in every session of a
+# notebook-carrying repo (sessions otherwise pattern-match to loaded context and bypass the agent).
+echo "📓 PRODUCT NOTEBOOK — docs/product/"
+echo "   Ask the \`product-manager\` agent for product/behavior/spec questions (notebook-grounded, cited); read code only to verify."
 
-out=""
-[ -n "$stale_msg" ] && out="⚠ Product notebook is STALE: ${stale_msg}."
-if [ "${pending_fold:-0}" -gt 0 ]; then
-  [ -n "$out" ] && out="${out} "
-  out="${out}✍ ${pending_fold} answered ledger question(s) are waiting to be folded."
-fi
-if [ -n "$out" ]; then
-  echo "${out} Run /learn-app to refresh the product notebook (docs/product/). ${status_line}"
+if [ -n "$stale_msg" ] || [ "${pending_fold:-0}" -gt 0 ]; then
+  echo "   ─────────────────────────────────────────────────────────"
+  [ -n "$stale_msg" ]            && echo "   ⚠️  STALE — ${stale_msg}"
+  [ "${pending_fold:-0}" -gt 0 ] && echo "   ✍️  ${pending_fold} answered question(s) waiting to fold into the notes"
+  echo "   ▶️  FIX IT:  /learn-app                 ← refresh the notebook (folds answers + catches code drift)"
+  echo "               /learn-app localhost:3000   ← also walk the live UI while refreshing"
+  [ -n "$status_line" ] && echo "   $(printf '%s' "$status_line" | sed 's/\*\*//g')"
+  echo "   ─────────────────────────────────────────────────────────"
 fi
 exit 0
