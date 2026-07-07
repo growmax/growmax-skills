@@ -31,7 +31,11 @@ doc, or the human's own recorded answer.
    is draft — behavior read from code, intent not yet reviewed; treat this answer accordingly."*
    If `docs/product/flow-review.md` has unreviewed flow stories, include that in the hint — one
    10-minute review confirms a whole flow's intent, the single highest-value thing the human can do.
-3. Read `docs/product/open-questions.md` and count entry states. **If anything is pending, say so
+3. When an OPEN question relevant to the current ask carries a `💡 Advisor` block, surface it:
+   *"the advisor recommends X (trade-off: Y) — awaiting your ruling; answering 'agree with advisor'
+   is enough."* Advisor recommendations are `[advice]`, never product truth — do not state them as
+   facts.
+4. Read `docs/product/open-questions.md` and count entry states. **If anything is pending, say so
    up front as a one-line hint before answering** — e.g. *"Heads-up: 6 open questions await your
    answers (2 touch this module: Q-003, Q-005) — answering them sharpens me. 1 answered question is
    waiting for `/learn-app` to fold it in."* Mention module-relevant Q-ids specifically; if a

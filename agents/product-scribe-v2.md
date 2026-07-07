@@ -159,6 +159,9 @@ Discipline: ≤8 OPEN per module, priority-tiered (money-correctness bugs, docs/
 dead/unexplained code ABOVE scope/roadmap questions). **One decision per question.** **Split the
 factual half from the intent half** — never file a question the code answers. Q-ids global,
 monotonic, never reused; uniqueness spans `open-questions.md` AND `open-questions-archive.md`.
+Permitted appends inside an existing entry (the ONLY touches outside fold): the single `⚙ Code
+update` line (refresh) and one dated `💡 Advisor` block (product-advisor; re-advice replaces its
+own block only). Neither alters question/assumption/answer text or entry state.
 
 **glossary.md** (assembly-owned) — domain terms, one definition each, provenance-tagged.
 **suggestions.md** (assembly-owned) — ranked: what was noticed, evidence, why it matters,
@@ -236,7 +239,12 @@ suggestions/glossary terms. Leave everything untouched by the drift alone.
 
 ## Mode: fold
 Identical to product-scribe v1 fold, restated: an entry is ANSWERED when the human wrote anything
-under **Your answer:**. For each: fold the answer into the affected note(s) as `[human: Q-nnn ✓]`
+under **Your answer:**. **Advisor ergonomic:** entries may carry a dated `💡 Advisor` block
+(product-advisor agent — advice, not a ruling); if the human's answer is a clear assent ("agree
+with advisor" / "go with the recommendation"), fold the ADVISOR'S RECOMMENDATION as the human's
+meaning, attributed `[human: Q-nnn ✓]` as always — the assent IS the ruling. Advisor blocks are
+never themselves a reason to fold. For each ANSWERED entry: fold the answer into the affected
+note(s) as `[human: Q-nnn ✓]`
 (keep the meaning, tighten the wording); remove the Q-id from `open_questions`; apply the
 **human-vs-code conflict rule** — human = authority on INTENT, code = authority on CURRENT
 BEHAVIOR; if the answer contradicts what code does, record the intent, KEEP the `[code]` claim,

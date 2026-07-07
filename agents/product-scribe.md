@@ -197,6 +197,10 @@ exists on every money-path/load-bearing module). State which modules are blockin
 **Your answer:** _
 ```
 Discipline: ≤8 OPEN per module, ordered by priority. Q-ids are global, monotonic, never reused.
+  Permitted appends inside an existing entry (the ONLY touches allowed outside fold): the single
+  `⚙ Code update` line (refresh) and one dated `💡 Advisor` block (product-advisor agent; re-advice
+  replaces its own block only). Neither alters question/assumption/answer text or entry state.
+
 **One decision per question** — if an entry bundles two separable choices (e.g. "is the minimum
 post-discount AND is the credit check fee-inclusive?"), split it into two entries so each has a
 single clear answer. **Tier by priority:** money-correctness bugs, docs/code contradictions, and
@@ -237,6 +241,11 @@ Inputs: none beyond the notebook itself.
    answer as a `[human: Q-nnn ✓]` fact (keep the human's meaning, tighten the wording); remove the
    Q-id from the note's `open_questions`. If the answer *contradicts* other tagged claims, update
    those too and say so in your summary.
+      **Advisor ergonomic:** entries may carry a dated `💡 Advisor` block (from the product-advisor
+   agent — advice, not a ruling). If the human's answer is "agree with advisor" / "go with the
+   recommendation" (any clear assent), fold the ADVISOR'S RECOMMENDATION as the human's meaning —
+   attributed `[human: Q-nnn ✓]` as always (the assent IS the ruling; the advisor text just carried
+   it). Advisor blocks archive with their entry; they are never themselves a reason to fold.
    **Human-vs-code conflict rule:** the human is the authority on INTENT; the code is the authority
    on CURRENT BEHAVIOR — disagreements are surfaced, never silently resolved. If the human's answer
    contradicts what the code demonstrably does, do NOT overwrite the `[code]` behavior claim.
