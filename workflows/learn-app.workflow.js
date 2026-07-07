@@ -349,6 +349,7 @@ const S = {
       glossary: { type: 'array', items: { type: 'object', additionalProperties: true } },
       demotions: { type: 'array' },
       removalsHandled: { type: 'array' },
+      ledgerImpacts: { type: 'array', items: { type: 'object', additionalProperties: true } }, // {qId, impact: moot|likely-answered|context-changed, summary, commitEvidence}
       notes: { type: 'string' },
     },
   },
@@ -785,6 +786,7 @@ New surfaces in your modules: ${JSON.stringify(newForThese)} · Removed: ${JSON.
 LIVE-WALK evidence for your modules (upgrade matching [code] claims to [walk], correct any the walk disproved, add flow/UI evidence): ${JSON.stringify(walkForThese)}
 Format gaps to backfill in YOUR notes: ${JSON.stringify(mods.map((m) => ({ slug: m.slug, gaps: gapsBySlug[m.slug] || [] })))}
 Your Q-id range: Q-${shardRange(idx).start} .. Q-${shardRange(idx).end}.
+ALSO run the ledger-impact check from your contract: read open-questions.md, judge every OPEN entry in YOUR modules against this drift, return ledgerImpacts[] (moot | likely-answered | context-changed — do NOT edit the ledger yourself).
 Follow your refresh-shard contract exactly.`,
               { label: `refresh:${mods.map((m) => m.slug).join(',')}`.slice(0, 60), phase: 'Write notes', schema: S.SHARD, agentType: SCRIBE }
             )
@@ -815,6 +817,7 @@ Drift summary: ${JSON.stringify(report.drift)} · Refresh shard returns: ${JSON.
 Audit result for the confidence block: ${JSON.stringify(audit)}
 Walk this run: ${JSON.stringify({ walked: uWalk.walkedCount, planned: uWalk.planned, partial: uWalk.partial })}
 SEAM TRACES this run (UPSERT docs/product/seams.md per your seams contract — update/add ONLY these seam sections, keep the rest; seam questions carry NO ids — assign above the highest existing; findings → suggestions; keep INDEX 'Seams:' line current): ${JSON.stringify(uSeamResult)}
+LEDGER IMPACTS from the refresh shards (append the single '⚙ Code update' annotation line inside each impacted OPEN entry per your contract — never alter question/assumption/answer text, never change state): ${JSON.stringify(refreshResults.flatMap((r) => r.ledgerImpacts || []))}
 Walk FINDINGS (rank into suggestions.md, data-integrity first): ${JSON.stringify(uWalk.findings)}
 Walk UI-PATTERN evidence (upgrade ui-patterns.md with [walk] tags): ${JSON.stringify(uWalk.uiPatterns)}
 Walk FLOW TRACES (update the flow status table — flows traced to their write boundary earn [walk] behavior evidence): ${JSON.stringify(uWalk.flowTraces)}

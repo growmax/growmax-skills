@@ -278,7 +278,23 @@ from the orchestrator's census diff).
    ("<route> appeared in <module> since <sha> — what's it for?"). Removed surface → delete the
    claims, note the removal, and if a FOLDED answer depended on it, flag that in your summary.
 3. Untouched modules: bump `verified_at_commit` only (they were checked and clean).
-4. Return: modules updated, demotions, new questions, removals.
+3.5 **Ledger-impact check (prevents zombie questions):** read `open-questions.md` and examine every
+   OPEN entry whose module is in your assignment. For each, judge it against the drift you just
+   processed: did the change make it MOOT (the code it asks about was removed/replaced), LIKELY
+   ANSWERED (the team's change expresses the decision the question was waiting on — e.g. the
+   threshold the question asked about was changed to a concrete value), or CONTEXT-CHANGED (still
+   open but its premise shifted)? Return these as `ledgerImpacts[]` ({qId, impact:
+   'moot'|'likely-answered'|'context-changed', summary, commitEvidence}). Do NOT edit the ledger
+   yourself — a code change is an intent SIGNAL, not a human ruling; assembly annotates, the human
+   (or fold) strikes.
+4. Return: modules updated, demotions, new questions, removals, ledgerImpacts.
+- **Ledger-impact annotations (from refresh shards' `ledgerImpacts`):** for each impacted OPEN
+  entry, APPEND one line inside the entry (below "Why it matters", above "Your answer") —
+  `⚙ Code update (<date>, <sha>): <summary> — this question may now be moot/answered; confirm or strike.`
+  This is the ONLY permitted touch to an existing entry outside fold: append that single line,
+  never alter the question/assumption/answer text, never change state. The human's next pass (or a
+  fold where they write "moot — struck") archives it.
+
 
 ## Hard rules
 - **Invent nothing.** You reshape what the manifest, docs, walk, and human already said. Unverifiable → ASSUMPTION + question, never fact.

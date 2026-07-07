@@ -276,7 +276,7 @@ load-bearing, and bumps note `status` (a note whose material assumptions are all
    Each shard updates affected notes' `[code]` claims, flips their `status` back to `draft` where
    behavior may have changed, sets the new `verified_at_commit`, and writes NEW ledger questions
    for anything whose intent it can't infer ("route X appeared in payments since <sha> — what's
-   it for?"). After each shard, print one progress line (shard i/s · notes touched · new Qs).
+   it for?"). After each shard, print one progress line (shard i/s · notes touched · new Qs). Each shard ALSO runs the ledger-impact check (scribe contract): OPEN questions in its modules judged against the drift → moot / likely-answered / context-changed; the fold/refresh pass appends the single '⚙ Code update' annotation inside impacted entries so the team's code changes surface in the ledger instead of leaving zombie questions — the human confirms or strikes.
 
 ### Phase U2.7 — Walk in UPDATE mode (when a target is given — raises an existing notebook's confidence)
 **Walking is NOT bootstrap-only.** The whole "raise MEDIUM → HIGH by walking" path depends on being
