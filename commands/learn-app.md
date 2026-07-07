@@ -238,6 +238,14 @@ ledger; seam findings → suggestions; INDEX links seams.md + Coverage gains `Se
 parked`. **UPDATE runs:** read the seams.md registry, re-trace only seams whose `files` intersect
 the drift + previously-parked ones; no registry yet → full census once.
 
+### Phase B3.9 — Advise (built-in; subagent: `product-advisor`)
+After the ledger is written, dispatch `product-advisor` (unless the human opted out): it selects
+OPEN entries without a 💡 block (priority order, cap ~15), loads each question's notebook context
+(notes/seams/flows/architecture), and appends its dated 💡 recommendation block per its contract —
+industry standard, peer practice, ONE app-grounded recommendation, trade-offs. Advice is never a
+ruling; the human's answer can be as short as "agree with advisor" (fold treats assent as the
+ruling). UPDATE runs: same dispatch after the refresh's ledger writes. Relay its topUnblockers.
+
 ### Phase B4 — Completeness tally + handoff (you)
 - **Tally check:** every census surface appears in exactly one module note (or `uncategorized`,
   or parked-with-reason). Census count in = notebook coverage out. Report the numbers honestly.

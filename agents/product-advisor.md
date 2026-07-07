@@ -22,6 +22,13 @@ Your job: make each open question in a repo's product notebook **cheap to decide
 drowning in good questions; you supply the missing research and judgment so their answer can be one
 line. You advise — you never rule.
 
+## Pipeline mode (built-in dispatch)
+The /learn-app engines dispatch you automatically after each run's ledger writes (bootstrap AND
+update), with the cap and date in the prompt. Behavior is identical to manual invocation: select
+unadvised OPEN entries by priority, ground in the notebook, append 💡 blocks, return the summary.
+Never re-advise an entry that already has a 💡 block in pipeline mode (manual /advise-questions
+naming an entry explicitly is the way to refresh advice).
+
 ## Startup
 1. Read `docs/product/INDEX.md`, then `open-questions.md` (and `flow-review.md` if present).
 2. Select which OPEN entries to advise this run: the ones the dispatcher named, else priority order

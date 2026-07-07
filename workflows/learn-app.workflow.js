@@ -15,6 +15,7 @@ export const meta = {
     { title: 'Trace seams', detail: '[always] cross-module rules: census the pipes, trace each end-to-end' },
     { title: 'Fact-check', detail: '[always, if audit on] sample [code] claims, re-verify vs source' },
     { title: 'Assemble notebook', detail: '[always] INDEX/architecture/runbook/glossary/suggestions + ledger upsert' },
+    { title: 'Advise', detail: '[always, if advise on] expert 💡 recommendations inside unadvised OPEN questions' },
     { title: 'Verify format', detail: '[always] disk-vs-data set checks, format compliance' },
     { title: 'Commit', detail: '[always] redaction gate + single git commit' },
   ],
@@ -63,6 +64,9 @@ const A = Object.assign(
     maxWalkBatchesPerRun: 30,
     waveSize: 4,             // parallel shards per wave
     audit: true,
+    advise: true,            // built-in advisor: new OPEN questions get a 💡 recommendation each run
+    adviseCap: 15,           // max entries advised per run (priority order; rest next run)
+    advisorAgent: 'growmax-skills:product-advisor',
     seamCap: 12,             // max seams traced per run (money-priority first; rest parked honestly)
     budgetPerShardEst: 120000,
     landingReserve: 150000,
@@ -438,6 +442,17 @@ const S = {
       notes: { type: 'string' },
     },
   },
+  ADVISE: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['advised'],
+    properties: {
+      advised: { type: 'array', items: { type: 'string' } },       // Q-ids / FR-ids that got a 💡 block
+      skipped: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      topUnblockers: { type: 'array', items: { type: 'string' } }, // the 2-3 answers that unblock the most
+      notes: { type: 'string' },
+    },
+  },
   AUDIT: {
     type: 'object',
     additionalProperties: true,
@@ -493,9 +508,9 @@ if (mode === 'update') {
   const skips = ['Read code']
   if (!A.target) skips.push('Explore app (no target — pass a URL to walk while refreshing)')
   if (pre.answeredCount === 0) skips.push('Fold answers (0 answered)')
-  log(`plan (update): Check state → ${pre.answeredCount > 0 ? 'Fold answers → ' : ''}Find changes → ${A.target ? 'Explore app (walk unwalked priority surfaces) → ' : ''}Trace seams → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Phases shown-but-skipped: ${skips.join(', ')}.`)
+  log(`plan (update): Check state → ${pre.answeredCount > 0 ? 'Fold answers → ' : ''}Find changes → ${A.target ? 'Explore app (walk unwalked priority surfaces) → ' : ''}Trace seams → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → ${A.advise ? 'Advise → ' : ''}Verify → Commit. Phases shown-but-skipped: ${skips.join(', ')}.`)
 } else {
-  log(`plan (build): Check state → Read code${A.target ? ' → Explore app' : ''} → Write notes → Trace seams → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Shown-but-skipped: Fold answers, Find changes${A.target ? '' : ', Explore app (no target)'}.`)
+  log(`plan (build): Check state → Read code${A.target ? ' → Explore app' : ''} → Write notes → Trace seams → ${A.audit ? 'Fact-check → ' : ''}Assemble → ${A.advise ? 'Advise → ' : ''}Verify → Commit. Shown-but-skipped: Fold answers, Find changes${A.target ? '' : ', Explore app (no target)'}.`)
 }
 
 if (!needBudget(A.landingReserve + A.budgetPerShardEst)) {
@@ -656,6 +671,9 @@ Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & 
     { label: 'assembly', phase: 'Assemble notebook', agentType: SCRIBE }
   )
   log(`assembly done · spent=${budget.spent()}`)
+
+  const adv = await adviseStage()
+  if (adv) report.advised = (adv.advised || []).length
 
   report = await verifyAuditCommit(report, censusIds, shardResults, 'bootstrap')
   return report
@@ -828,8 +846,29 @@ Follow your assembly-touchup contract: INDEX counts + Coverage & Confidence (inc
     )
   }
 
+  const adv = await adviseStage()
+  if (adv) report.advised = (adv.advised || []).length
+
   report = await verifyAuditCommit(report, null, null, 'update')
   return report
+}
+
+// adviseStage — built-in expert recommendations. Runs AFTER assembly (ledger already upserted),
+// BEFORE verify. The advisor's 💡 blocks are a permitted append class inside existing entries
+// (like the ⚙ code-update line) — the one sanctioned second toucher of the ledger in a run.
+async function adviseStage() {
+  if (!A.advise) { log('advise skipped (disabled)'); return null }
+  if (!needBudget(A.landingReserve)) { log('advise skipped (budget guard)'); return null }
+  phase('Advise')
+  const adv = await agent(
+    `PIPELINE DISPATCH. Advise the product-notebook ledger at ${NB}/open-questions.md (repo: ${A.repoRoot}). Date: ${A.timestamp}.
+Select OPEN entries WITHOUT an existing 💡 Advisor block, in your contract's priority order (money-correctness and docs-vs-code contradictions first), cap ${A.adviseCap}. Load each question's notebook context FIRST (its module notes, seams.md sections, the flows note, architecture.md) — a recommendation that ignores this app's constraints is a failure.
+Append ONE dated 💡 block per entry per your contract (industry standard · how peers handle it · ONE app-grounded recommendation with the why · trade-offs · effort signal), below the last line above '**Your answer:**'. NEVER touch question/assumption/answer text or entry state. Also advise flow-review.md stories lacking a block, if the file exists.
+Return advised ids, skipped (with reason), and the 2-3 topUnblockers.`,
+    { label: 'advise', phase: 'Advise', schema: S.ADVISE, agentType: A.advisorAgent }
+  )
+  if (adv) log(`advised ${(adv.advised || []).length} entries (cap ${A.adviseCap}) · top unblockers: ${(adv.topUnblockers || []).join(', ') || '—'}`)
+  return adv
 }
 
 // ---------- shared closing stages ----------
