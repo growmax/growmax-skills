@@ -490,11 +490,12 @@ const mode = pre.indexExists ? 'update' : 'bootstrap'
 log(`mode=${mode} (hint was ${A.modeHint || 'none'}) · HEAD=${pre.headSha} · maxQId=${pre.maxQId} · answered=${pre.answeredCount} · ui=${pre.uiSurface} · spent=${budget.spent()}`)
 // State the plan so skipped phases in the tree are expected, not confusing.
 if (mode === 'update') {
-  const skips = ['Read code', 'Explore app']
+  const skips = ['Read code']
+  if (!A.target) skips.push('Explore app (no target — pass a URL to walk while refreshing)')
   if (pre.answeredCount === 0) skips.push('Fold answers (0 answered)')
-  log(`plan (update): Check state → ${pre.answeredCount > 0 ? 'Fold answers → ' : ''}Find changes → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Phases shown-but-skipped: ${skips.join(', ')}.`)
+  log(`plan (update): Check state → ${pre.answeredCount > 0 ? 'Fold answers → ' : ''}Find changes → ${A.target ? 'Explore app (walk unwalked priority surfaces) → ' : ''}Trace seams → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Phases shown-but-skipped: ${skips.join(', ')}.`)
 } else {
-  log(`plan (build): Check state → Read code${A.target ? ' → Explore app' : ''} → Write notes → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Shown-but-skipped: Fold answers, Find changes${A.target ? '' : ', Explore app'}.`)
+  log(`plan (build): Check state → Read code${A.target ? ' → Explore app' : ''} → Write notes → Trace seams → ${A.audit ? 'Fact-check → ' : ''}Assemble → Verify → Commit. Shown-but-skipped: Fold answers, Find changes${A.target ? '' : ', Explore app (no target)'}.`)
 }
 
 if (!needBudget(A.landingReserve + A.budgetPerShardEst)) {
