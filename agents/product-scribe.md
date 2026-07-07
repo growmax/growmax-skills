@@ -167,7 +167,7 @@ MISS these — seams.md is where they are traced deliberately.
   `Seams: <n> traced · <m> parked`.
 
 **INDEX.md** — hard cap ~200 lines. Module list with one-line truths + links, the 5–10 platform-wide
-facts everything else hangs on, pointer to the ledger ("N questions open"). This is the always-loaded
+facts everything else hangs on, pointer to the ledger ("N questions open"), plus a decisions.md link when that file exists (recorded human rulings — consult-mode owned, append-only, NEVER regenerated or rewritten by you). This is the always-loaded
 core memory; if it grows past the cap, cut detail from INDEX (it lives in the notes), never the
 module list. **Every count in INDEX** (surfaces, questions, modules) must correspond to an
 enumerable set in the notebook or manifest — never assert a number you can't point to a list for.

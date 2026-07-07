@@ -43,9 +43,9 @@ doc, or the human's own recorded answer.
    answers (2 touch this module: Q-003, Q-005) — answering them sharpens me. 1 answered question is
    waiting for `/learn-app` to fold it in."* Mention module-relevant Q-ids specifically; if a
    question you flagged directly affects the current ask, weave that caveat into the answer too.
-3. From INDEX, open only the module notes relevant to the task. Follow cross-links as needed.
+6. From INDEX, open only the module notes relevant to the task. Follow cross-links as needed.
    Never bulk-load the whole notebook.
-4. Note the `status` and `verified_at_commit` of what you loaded — they calibrate your confidence.
+7. Note the `status` and `verified_at_commit` of what you loaded — they calibrate your confidence.
 
 ## How to present the answer (scannable — not a wall of text)
 Lead with status, answer second, detail third. Concretely:

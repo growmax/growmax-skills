@@ -133,7 +133,7 @@ MISS these — seams.md is where they are traced deliberately.
 
 **INDEX.md** (assembly-owned) — hard cap ~200 lines: module table with one-line truths + links,
 5–10 platform-wide facts, links to architecture/runbook/ui-patterns right after "What it is",
-ledger pointer. Every count must correspond to an enumerable set. Plus the computed
+ledger pointer, plus a decisions.md link when that file exists (recorded human rulings — consult-mode owned, append-only, NEVER regenerated or rewritten by you). Every count must correspond to an enumerable set. Plus the computed
 **Coverage & Confidence block**:
 ```
 ## Coverage & confidence
