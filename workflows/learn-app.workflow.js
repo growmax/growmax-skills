@@ -12,6 +12,7 @@ export const meta = {
     { title: 'Fold answers', detail: '[update only] merge answered ledger questions — SKIPPED if 0 answered' },
     { title: 'Find changes', detail: '[update only] diff base + affected modules' },
     { title: 'Write notes', detail: '[always] parallel scribe shards, budget-guarded waves' },
+    { title: 'Trace seams', detail: '[always] cross-module rules: census the pipes, trace each end-to-end' },
     { title: 'Fact-check', detail: '[always, if audit on] sample [code] claims, re-verify vs source' },
     { title: 'Assemble notebook', detail: '[always] INDEX/architecture/runbook/glossary/suggestions + ledger upsert' },
     { title: 'Verify format', detail: '[always] disk-vs-data set checks, format compliance' },
@@ -62,6 +63,7 @@ const A = Object.assign(
     maxWalkBatchesPerRun: 30,
     waveSize: 4,             // parallel shards per wave
     audit: true,
+    seamCap: 12,             // max seams traced per run (money-priority first; rest parked honestly)
     budgetPerShardEst: 120000,
     landingReserve: 150000,
     // agent overrides — defaults are the production agents; the harness may substitute a
@@ -103,6 +105,38 @@ const tally = (censusIds, placedLists) => {
   const extra = [...seen.keys()].filter((id) => !censusIds.includes(id))
   const dupes = [...seen.entries()].filter(([, n]) => n > 1).map(([id]) => id)
   return { ok: !missing.length && !extra.length && !dupes.length, missing, extra, dupes }
+}
+
+// traceSeams — the "walk the house following the pipes" pass, shared by bootstrap and update.
+// Takes a seam list (from census or registry-delta), traces up to A.seamCap of them (money-priority
+// first) in parallel waves of read-only tracer agents, and returns {traces, parked}. Every seam in
+// = traced OR parked-with-reason out (same honesty as the surface tally). Tracers follow the DATA
+// across modules: where the field/value is written → every transform → where it's consumed.
+async function traceSeams(seamList) {
+  const P = { money: 0, core: 1, periphery: 2 }
+  const ordered = [...seamList].sort((a, b) => (P[a.priority] ?? 2) - (P[b.priority] ?? 2))
+  const toTrace = ordered.slice(0, A.seamCap)
+  const parked = ordered.slice(A.seamCap).map((s) => ({ seamId: s.id, traced: false, parkedReason: `seamCap ${A.seamCap} (priority ${s.priority}) — next run picks it up`, name: s.name, files: s.files || [], modules: s.modules }))
+  if (ordered.length > toTrace.length) log(`seams: tracing ${toTrace.length}/${ordered.length} this run (cap ${A.seamCap}, money-priority first) — ${parked.length} parked honestly`)
+  const traces = []
+  for (const wave of chunk(toTrace, A.waveSize)) {
+    if (!needBudget(A.landingReserve)) { for (const s of wave) parked.push({ seamId: s.id, traced: false, parkedReason: 'budget guard', name: s.name, files: s.files || [], modules: s.modules }); continue }
+    const results = await parallel(
+      wave.map((s) => () =>
+        agent(
+          `TRACE ONE CROSS-MODULE SEAM in the repo at ${A.repoRoot} (READ-ONLY — you write nothing, you return data).
+Seam ${s.id} · "${s.name}" · kind=${s.kind} · modules=${JSON.stringify(s.modules)} · hypothesis: ${s.hypothesis || 'none'}
+Start from these files if given: ${JSON.stringify(s.files || [])}
+Follow the DATA end-to-end across module boundaries: where is the value/field/config WRITTEN or defined → every place it is TRANSFORMED (conversions, copies, derivations, defaults) → where it is CONSUMED and what behavior it drives. Read the actual code at every hop — never infer a hop from naming.
+Return: traced=true with rule (the cross-module rule in plain language), steps[] ("file — what happens" in order), claims[] ({claim, tag:'[code]'} — every claim grounded in a file you read), files[] (every file the trace touched), questions[] (only what a HUMAN must settle: intent/policy — factual gaps you could not resolve from code become an ASSUMPTION claim + a question), findings[] (defects noticed while tracing: dead ends, asymmetric guards, unit mismatches — severity high|medium|low). If you genuinely cannot trace it, traced=false + parkedReason.`,
+          { label: `seam:${s.id}`, phase: 'Trace seams', schema: S.SEAMTRACE, model: 'sonnet' }
+        ).then((t) => t && Object.assign(t, { name: s.name, kind: s.kind, modules: s.modules }))
+      )
+    )
+    for (const t of results) if (t) traces.push(t)
+    log(`seam wave done: ${traces.filter((t) => t.traced).length} traced, ${traces.filter((t) => !t.traced).length + parked.length} parked · spent=${budget.spent()}`)
+  }
+  return { traces, parked }
 }
 
 // runWalk — the shared read-only walk, used by BOTH bootstrap and update. Each batch is a fresh
@@ -361,6 +395,48 @@ const S = {
       notesOutdated: { type: 'array', items: { type: 'string' } },
     },
   },
+  SEAMS: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['seams'],
+    properties: {
+      seams: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: true,
+          required: ['id', 'name', 'kind', 'modules', 'priority'],
+          properties: {
+            id: { type: 'string' },      // SM-001…
+            name: { type: 'string' },
+            kind: { type: 'string', enum: ['data-handoff', 'shared-lib', 'config-consumption', 'eventing', 'fk-relation'] },
+            modules: { type: 'array', items: { type: 'string' } },
+            files: { type: 'array', items: { type: 'string' } },
+            priority: { type: 'string', enum: ['money', 'core', 'periphery'] },
+            hypothesis: { type: 'string' },
+          },
+        },
+      },
+      notes: { type: 'string' },
+    },
+  },
+  SEAMTRACE: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['seamId', 'traced'],
+    properties: {
+      seamId: { type: 'string' },
+      traced: { type: 'boolean' },
+      rule: { type: 'string' },           // the cross-module rule as actually traced, plain language
+      steps: { type: 'array', items: { type: 'string' } }, // "file → what happens" hops, in order
+      claims: { type: 'array', items: { type: 'object', additionalProperties: true } }, // {claim, tag}
+      files: { type: 'array', items: { type: 'string' } }, // exact files touched (incremental key)
+      questions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      findings: { type: 'array', items: { type: 'object', additionalProperties: true } }, // bugs seen while tracing
+      parkedReason: { type: 'string' },
+      notes: { type: 'string' },
+    },
+  },
   AUDIT: {
     type: 'object',
     additionalProperties: true,
@@ -531,6 +607,23 @@ Follow your bootstrap-shard contract exactly: full-file overwrites, provenance t
   report.tally = t.ok ? `OK ${censusIds.length}=${censusIds.length}` : `MISMATCH missing=${t.missing.join(',')} extra=${t.extra.join(',')} dupes=${t.dupes.join(',')}`
   log(`tally: ${report.tally}`)
 
+  // ---------- Trace seams (cross-module rules — the pipes between the rooms) ----------
+  phase('Trace seams')
+  const seamCensus = await agent(
+    `Enumerate the CROSS-MODULE SEAMS of the repo at ${A.repoRoot} (READ-ONLY, return data). A seam = a business rule whose behavior emerges from code in 2+ modules. Hunt these five kinds mechanically:
+1. fk-relation: schema relations/foreign keys where a model owned by one module points into another (read the ORM schema) — especially fields configuring behavior consumed elsewhere (unit/UOM ids, price-list ids, tax refs).
+2. data-handoff: document/entity conversions copying or deriving values across modules (convert/fulfil/receive/allocate handlers).
+3. shared-lib: libs consumed by 2+ modules that CARRY business rules (money math, status machines, tax/discount calculators) — the rule is the lib's contract + who depends on it.
+4. config-consumption: settings/flags written in one module, read in another (org settings → line math; feature flags → behavior).
+5. eventing: events/queues emitted in one module, handled in another.
+Module map: ${JSON.stringify(census.modules.map((m) => ({ slug: m.slug, sourceDirs: m.sourceDirs })))}
+Return seams[]: id (SM-001…), name, kind, modules involved, files (concrete starting points you saw), priority: 'money' (anything touching amounts/qty/price/tax/stock), 'core' (document chain, auth), 'periphery'. Be exhaustive on money seams; don't pad with trivial imports (a seam carries a RULE, not just a dependency).`,
+    { label: 'seam:census', phase: 'Trace seams', schema: S.SEAMS, model: 'sonnet', effort: 'high' }
+  )
+  const seamResult = await traceSeams((seamCensus && seamCensus.seams) || [])
+  report.seams = { found: ((seamCensus && seamCensus.seams) || []).length, traced: seamResult.traces.filter((x) => x.traced).length, parked: seamResult.parked.length + seamResult.traces.filter((x) => !x.traced).length }
+  log(`seams: ${report.seams.found} found → ${report.seams.traced} traced · ${report.seams.parked} parked`)
+
   // ---------- Audit (before assembly so its result lands in INDEX via the single writer) ----------
   phase('Fact-check')
   let audit = null
@@ -556,7 +649,8 @@ Walk FINDINGS (defects observed live — rank into suggestions.md by severity, d
 Walk UI-PATTERN evidence (PRIMARY source for ui-patterns.md — upgrade its sections with [walk]-tagged rendered-reality evidence; static code reading is the fallback, the walk is the truth): ${JSON.stringify(walkUiPatterns)}
 Walk FLOW TRACES (journeys actually followed — PRIMARY behavior evidence for the flows note's status table: a fully-traced flow to its write boundary earns behavior evidence [walk]): ${JSON.stringify(walkFlowTraces)}
 Audit result for the Coverage & Confidence block (include an '- Audit:' line if non-null): ${JSON.stringify(audit)}
-Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & Confidence computed from these inputs), architecture.md (5 sections), runbook.md, ${pre.uiSurface ? 'ui-patterns.md, ' : ''}glossary.md, suggestions.md; UPSERT open-questions.md with the shards' questions (id order, template format, status header). Full-file overwrites everywhere except the ledger upsert.`,
+SEAM TRACES (write docs/product/seams.md per your seams contract — every seam traced or parked-with-reason, files[] recorded per seam as the incremental key; seam questions carry NO ids — assign sequential Q-ids ABOVE the highest shard-assigned id and reference them from seams.md; seam findings rank into suggestions.md; INDEX links seams.md and Coverage gains 'Seams: n traced · m parked'): ${JSON.stringify({ traces: seamResult.traces, parked: seamResult.parked })}
+Follow your assembly contract exactly: write INDEX.md (≤200 lines, Coverage & Confidence computed from these inputs), architecture.md (5 sections), runbook.md, seams.md, ${pre.uiSurface ? 'ui-patterns.md, ' : ''}glossary.md, suggestions.md; UPSERT open-questions.md with the shards' + seams' questions (id order, template format, status header). Full-file overwrites everywhere except the ledger upsert.`,
     { label: 'assembly', phase: 'Assemble notebook', agentType: SCRIBE }
   )
   log(`assembly done · spent=${budget.spent()}`)
@@ -625,14 +719,47 @@ if (mode === 'update') {
     report.walk = { walked: uWalk.walkedCount, planned: uWalk.planned, findings: uWalk.findings.length, partial: uWalk.partial }
   }
 
+  // ---------- Seam delta (which pipes need [re]tracing this run) ----------
+  phase('Trace seams')
+  let uSeamResult = { traces: [], parked: [] }
+  {
+    const reg = await agent(
+      `Read ${NB}/seams.md if it exists (read-only). Return registry[]: {id, name, kind, modules[], files[], status ('traced'|'parked'), parkedReason?} for every seam section found; exists=false if the file is absent.`,
+      { label: 'seam:registry', phase: 'Trace seams', schema: { type: 'object', additionalProperties: true, required: ['exists'], properties: { exists: { type: 'boolean' }, registry: { type: 'array', items: { type: 'object', additionalProperties: true } } } }, model: 'haiku', effort: 'low' }
+    )
+    let seamWork = []
+    if (!reg || !reg.exists) {
+      // No registry yet (pre-seams notebook) → full census, like bootstrap.
+      const sc = await agent(
+        `Enumerate the CROSS-MODULE SEAMS of the repo at ${A.repoRoot} (READ-ONLY, return data). A seam = a business rule whose behavior emerges from code in 2+ modules. Five kinds: fk-relation (schema relations configuring behavior consumed elsewhere — unit/UOM ids, price refs), data-handoff (convert/fulfil/receive/allocate copying-deriving values), shared-lib (money math/status machines/tax calculators consumed by 2+ modules), config-consumption (settings written here, read there), eventing. Use ${NB}/INDEX.md's module table + the notes' Connections sections + the ORM schema as your map. Return seams[] {id SM-001…, name, kind, modules, files, priority money|core|periphery, hypothesis}; exhaustive on money seams; a seam carries a RULE, not a mere import.`,
+        { label: 'seam:census', phase: 'Trace seams', schema: S.SEAMS, model: 'sonnet', effort: 'high' }
+      )
+      seamWork = (sc && sc.seams) || []
+    } else {
+      const changed = new Set()
+      // retrace: seams whose recorded files intersect the drift; plus all previously-parked seams
+      const changedFiles = new Set()
+      for (const m of drift.affectedModules || []) for (const p of m.changedPaths || []) changedFiles.add(p)
+      for (const r of reg.registry || []) {
+        const hit = (r.files || []).some((f) => changedFiles.has(f)) || (r.status === 'parked')
+        if (hit) { seamWork.push({ id: r.id, name: r.name, kind: r.kind || 'data-handoff', modules: r.modules || [], files: r.files || [], priority: 'money', hypothesis: r.parkedReason ? 'previously parked' : 'files drifted — re-verify the rule' }) }
+      }
+      if (seamWork.length) log(`seam delta: ${seamWork.length} seam(s) need [re]tracing (drift-hit or previously parked)`)
+      else log('seam registry current — no seams touched by this drift')
+    }
+    if (seamWork.length) uSeamResult = await traceSeams(seamWork)
+    report.seams = { retraced: uSeamResult.traces.filter((x) => x.traced).length, parked: uSeamResult.parked.length + uSeamResult.traces.filter((x) => !x.traced).length }
+  }
+
   // ---------- Refresh shard waves ----------
   phase('Write notes')
   const affected = drift.affectedModules
   const walkedNotAffected = [...walkedModuleSlugs].filter((s) => !affected.some((m) => m.slug === s)).map((slug) => ({ slug, changedPaths: [], walkOnly: true }))
   const outdatedOnly = (gaps.notesOutdated || []).filter((s) => !affected.some((m) => m.slug === s) && !walkedModuleSlugs.has(s)).map((slug) => ({ slug, changedPaths: [] }))
   const workList = [...affected, ...walkedNotAffected, ...outdatedOnly]
-  if (!workList.length && !(drift.newSurfaces || []).length) {
-    log('no drift, no format gaps, no new walk evidence — notebook already current')
+  const seamOnlyWork = !workList.length && !(drift.newSurfaces || []).length && (uSeamResult.traces.length || uSeamResult.parked.length)
+  if (!workList.length && !(drift.newSurfaces || []).length && !seamOnlyWork) {
+    log('no drift, no format gaps, no new walk evidence, no seam work — notebook already current')
   } else {
     const shards = chunk(workList, workList.length > 10 ? A.shardSize : workList.length || 1)
     log(`refresh plan: ${workList.length} modules → ${shards.length} shard(s)`)
@@ -687,6 +814,7 @@ Follow your refresh-shard contract exactly.`,
 Drift summary: ${JSON.stringify(report.drift)} · Refresh shard returns: ${JSON.stringify(refreshResults)}
 Audit result for the confidence block: ${JSON.stringify(audit)}
 Walk this run: ${JSON.stringify({ walked: uWalk.walkedCount, planned: uWalk.planned, partial: uWalk.partial })}
+SEAM TRACES this run (UPSERT docs/product/seams.md per your seams contract — update/add ONLY these seam sections, keep the rest; seam questions carry NO ids — assign above the highest existing; findings → suggestions; keep INDEX 'Seams:' line current): ${JSON.stringify(uSeamResult)}
 Walk FINDINGS (rank into suggestions.md, data-integrity first): ${JSON.stringify(uWalk.findings)}
 Walk UI-PATTERN evidence (upgrade ui-patterns.md with [walk] tags): ${JSON.stringify(uWalk.uiPatterns)}
 Walk FLOW TRACES (update the flow status table — flows traced to their write boundary earn [walk] behavior evidence): ${JSON.stringify(uWalk.flowTraces)}

@@ -147,6 +147,25 @@ code-inferred guesses. INDEX links it next to architecture.md.
   Stating an ASSUMPTION in the voice of fact is THE disqualifying defect — when unsure, it's an
   ASSUMPTION *and* usually a ledger question.
 
+**seams.md (assembly-owned — the CROSS-CUTTING RULE registry; the fix for "rules that live between
+modules"):** `docs/product/seams.md`. A **seam** = a business rule whose behavior emerges from code
+in 2+ modules: a field written in module A and consumed (often transformed) in module B (e.g.
+`ProductVariant.purchaseUOMId` → GRN receipt → inventory unit), a shared lib binding many modules
+(pricing/status/money math), a document handoff (convert/fulfil copying or deriving values), config
+set in one place and consumed far away, or an event/queue contract. Per-module notes structurally
+MISS these — seams.md is where they are traced deliberately.
+- One section per seam: `SM-nnn · <name>` with frontmatter-style fields inline: `kind`
+  (data-handoff | shared-lib | config-consumption | eventing | fk-relation), `modules`, `files`
+  (the concrete files the trace touched — this is the incremental-retrace key), `status`
+  (traced | parked: <reason>), `verified_at_commit`.
+- Body: **the rule as actually traced**, step by step ("written here → transformed here → consumed
+  here"), every claim provenance-tagged like any note; unknowns become `[ASSUMPTION]` + a ledger
+  question, NEVER a guess. Cross-link the involved module notes; the module notes' Connections
+  sections should link back on their next refresh.
+- **Registry honesty:** every seam the census found appears as traced OR parked-with-reason
+  (budget/cap/unclear) — never silently absent. INDEX links seams.md and the Coverage block gains
+  `Seams: <n> traced · <m> parked`.
+
 **INDEX.md** — hard cap ~200 lines. Module list with one-line truths + links, the 5–10 platform-wide
 facts everything else hangs on, pointer to the ledger ("N questions open"). This is the always-loaded
 core memory; if it grows past the cap, cut detail from INDEX (it lives in the notes), never the

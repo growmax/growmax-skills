@@ -224,6 +224,20 @@ the notebook (a scoped bootstrap for the new surface, merging into the same docs
 than redoing what exists. Never let a scoped first run masquerade as whole-platform coverage —
 the confidence block must say what's not covered.
 
+### Phase B3.7 — Trace seams (cross-module rules — per-module notes structurally MISS these)
+A **seam** = a business rule living in 2+ modules (a field written in module A consumed/transformed
+in module B — e.g. `purchaseUOMId` → GRN receipt → inventory unit; shared money/status/tax libs;
+document handoffs copying/deriving values; config set here, read there; events). After the module
+shards: (1) **seam census** — enumerate seams mechanically from the ORM schema's cross-module
+relations, shared-lib imports, handoff handlers, config reads, and the notes' Connections sections;
+priority `money > core > periphery`. (2) **Trace each seam end-to-end through the code** (write →
+every transform → consume), one read-only pass per seam, capped (~12/run, money first, rest PARKED
+with reason — never silently dropped). (3) Write `docs/product/seams.md` per the scribe's seams
+contract (traced/parked registry with per-seam `files:` as the incremental key); seam questions →
+ledger; seam findings → suggestions; INDEX links seams.md + Coverage gains `Seams: n traced · m
+parked`. **UPDATE runs:** read the seams.md registry, re-trace only seams whose `files` intersect
+the drift + previously-parked ones; no registry yet → full census once.
+
 ### Phase B4 — Completeness tally + handoff (you)
 - **Tally check:** every census surface appears in exactly one module note (or `uncategorized`,
   or parked-with-reason). Census count in = notebook coverage out. Report the numbers honestly.
