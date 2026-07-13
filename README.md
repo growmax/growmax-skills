@@ -75,7 +75,7 @@ git pull                # later: symlinked skills update instantly
 | Skill | Invoke as | What it does |
 |---|---|---|
 | `github-repo-analyzer` | `/growmax-skills:github-repo-analyzer` | Analyze any GitHub repo — what it is, problem, why used, benefits — plus a two-part "safe to use?" verdict: license (open source? can Growmax use it?) and security (a Trivy scan for CVEs, secrets, misconfigs). |
-| `terse-mode` | `/growmax-skills:terse-mode [lite\|full\|off]` | Switch the session to a terse, low-token reply style — same technical content, far fewer words; code/commands stay byte-exact. In-house alternative to caveman-style output compressors, with near-zero per-turn overhead. Say "normal mode" to stop. |
+| `terse-mode` | `/growmax-skills:terse-mode [lite\|full\|off]` | Switch the session to a terse, low-token reply style — same technical content, far fewer words; code/commands stay byte-exact. In-house alternative to caveman-style output compressors, with near-zero per-turn overhead. **On by default** in every session via a SessionStart hook (level `lite`); opt out with `GROWMAX_TERSE=0`, go harder with `GROWMAX_TERSE=full`, or say "normal mode" mid-session. |
 
 ### Workflows (command + subagents)
 

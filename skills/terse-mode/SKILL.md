@@ -42,6 +42,15 @@ never the *substance*.
 
 Level persists for the session until changed. If invoked with no argument, use `full`.
 
+## Always-on default
+
+The plugin's SessionStart hook (`hooks/terse-default.sh`) injects the `lite` rules
+into every session automatically — no invocation needed. `lite` is the quality-safe
+floor: concise but grammatical, never trades correctness for brevity. Control it
+per-machine with the env var `GROWMAX_TERSE` (`0` = off entirely, `full` = clipped
+style), or per-session by saying "terse mode full" / "normal mode". This skill is
+invoked explicitly only to *change* level mid-session.
+
 ## On invocation
 
 Confirm in one line — e.g. `Terse mode: full. Say "normal mode" to stop.` — then
