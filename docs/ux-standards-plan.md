@@ -39,6 +39,26 @@ Industry-standard restructure (how Polaris/Carbon/Primer-class systems and lint 
 standards change without touching agents, and other Growmax apps can adopt the same machinery
 with their own standards file.
 
+**Two-layer split (portability):** folder structures are app-specific — Next.js (app or pages
+router) and React+Vite apps do not share layouts, so a standard hardcoding `src/components/list/`
+is only valid for one app. The doc is therefore split:
+
+- `examples/UI-STANDARDS.template.md` — **Part A universal rules** (framework-agnostic, apply to
+  every element whether cataloged or not) + **Part B per-app catalog** (placeholder tables) + a
+  **Bootstrap procedure** Claude runs inside each app repo to *discover* Part B (detect
+  framework, locate primitives/composition/token layers, enumerate shared components, extract
+  the icon map and tunables, reconcile contradictions into open questions).
+- `examples/UI-STANDARDS.md` — the **filled instance for the ink-on-paper admin app** (the app
+  the v1 guidelines came from), kept as the worked example; its header forbids copying its paths
+  into other repos.
+
+**Open-ended elements (the catalog is a floor, not a ceiling):** a catalog can never list every
+element an app will need, so rule **CMP-5** defines the off-catalog protocol: primitives first →
+grep for prior art (≥2 hand-rolled copies = extract to shared, never add a third) → build new
+elements in the shared location obeying all Part A rules → **register the new catalog row in the
+same PR** (part of the definition of done). Unlisted elements are explicitly *never exempt* from
+the universal rules — this is what prevents "not in the doc" from becoming an escape hatch.
+
 ---
 
 ## Part 2 — why not three agents (the reasoning)
@@ -94,11 +114,16 @@ repos that contain `.claude/UI-STANDARDS.md` so it stays silent everywhere else.
 ## Part 3 — the build plan (on go-ahead)
 
 ### Phase A — standards into the app repo (30 min, mostly done)
-1. ✅ `examples/UI-STANDARDS.md` (this branch) — refined v2 of the guidelines.
-2. ✅ `examples/UX-DRIFT-BACKLOG.md` (this branch) — seeded with all 19 known items from v1 §11.
-3. Copy both into the product repo (`.claude/UI-STANDARDS.md`, `docs/ux-drift-backlog.md`);
-   add the ~10-line "building UI?" pointer to that repo's `CLAUDE.md`.
-4. Owner resolves OPEN-1/OPEN-2 (toolbar height, primitive heights) — two small decisions.
+1. ✅ `examples/UI-STANDARDS.template.md` (this branch) — the portable standard: universal rules
+   + placeholder catalog + the Bootstrap procedure that fills it from any repo.
+2. ✅ `examples/UI-STANDARDS.md` (this branch) — the filled instance for the ink-on-paper app,
+   incl. CMP-5 (off-catalog protocol).
+3. ✅ `examples/UX-DRIFT-BACKLOG.md` (this branch) — seeded with all 19 known items from v1 §11.
+4. Ink-on-paper app: copy the filled instance + backlog into that repo
+   (`.claude/UI-STANDARDS.md`, `docs/ux-drift-backlog.md`); add the ~10-line "building UI?"
+   pointer to its `CLAUDE.md`. **Any other app:** copy the *template* and run its Bootstrap in
+   that repo instead.
+5. Owner resolves OPEN-1/OPEN-2 (toolbar height, primitive heights) — two small decisions.
 
 ### Phase B — the reviewer agent (the one new agent)
 5. `agents/ui-standards-reviewer.md` — portable; reads `.claude/UI-STANDARDS.md` from the target
@@ -119,7 +144,12 @@ repos that contain `.claude/UI-STANDARDS.md` so it stays silent everywhere else.
 7. `commands/ux-audit.md` — census one module (or the app) against the standards: fan out
    `ui-standards-reviewer` per module in parallel, verify findings (the `/feature-review`
    blocker-verification discipline), **append verified rows to `docs/ux-drift-backlog.md`**,
-   present the delta for human priority-blessing. Mirrors `/e2e-map`.
+   present the delta for human priority-blessing. Mirrors `/e2e-map`. Two extra duties:
+   **bootstrap mode** (no `.claude/UI-STANDARDS.md` in the repo → run the template's Bootstrap
+   and produce the filled instance for owner review) and **catalog growth** (detect the same
+   element hand-rolled on ≥2 screens → propose an extract-and-register backlog item per CMP-5,
+   so the catalog converges on what the app actually needs instead of staying frozen at its
+   seed list).
 8. `commands/ux-migrate.md` — work the approved backlog top-down: per item, fix (main session
    edits, smallest diff that lands on the shared component) → re-run `ui-standards-reviewer` on
    the touched files → flip status to `done (commit)` → commit per item or small batch.

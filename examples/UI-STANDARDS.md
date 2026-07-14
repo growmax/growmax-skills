@@ -1,9 +1,15 @@
 # UI-STANDARDS — component-level UI rules (companion to DESIGN.md)
 
-> **Install:** copy this file into the product repo as `.claude/UI-STANDARDS.md` and commit it.
-> It is read by (a) any Claude session **building** UI, (b) the `ui-standards-reviewer` agent
-> **verifying** a diff, and (c) the `/ux-audit` → `/ux-migrate` workflow **refactoring** drift.
-> Humans read it too — it is written for both audiences.
+> **This is a FILLED INSTANCE of `UI-STANDARDS.template.md`, specific to the ink-on-paper
+> admin app** — every path in it (`src/components/list/`, `layout/document-page-header.tsx`, …)
+> is THAT app's structure. **Do not copy it into a different repo**: other apps (Next.js
+> app/pages router, other React apps) have different layouts and components — for them, copy
+> the **template** and run its Bootstrap section so the catalog is discovered from that repo.
+>
+> **Install (ink-on-paper app only):** copy as `.claude/UI-STANDARDS.md` and commit. It is read
+> by (a) any Claude session **building** UI, (b) the `ui-standards-reviewer` agent **verifying**
+> a diff, and (c) the `/ux-audit` → `/ux-migrate` workflow **refactoring** drift. Humans read it
+> too — it is written for both audiences.
 
 | | |
 |---|---|
@@ -32,7 +38,9 @@
 `src/components/layout/`, and `src/components/settings/` for an existing composition component.
 Configure the existing one; never hand-roll a header, toolbar, button row, or filter from scratch.
 
-**CMP-2 (MUST)** One screen region → one shared component, everywhere ("compose, never fork"):
+**CMP-2 (MUST)** One screen region → one shared component, everywhere ("compose, never fork").
+This table lists the regions that exist today and **grows via CMP-5.4** — every new shared
+component registers its row in the same PR:
 
 | Screen region | Use this (file) | Never |
 |---|---|---|
@@ -65,6 +73,24 @@ never hardcodes fixed pixel widths that break on small screens.
 **CMP-4 (MUST)** If a shared component isn't responsive or flexible enough — fix the shared
 component; never work around it in the page, and never copy a neighbour page's hand-rolled
 version (that's how drift spreads).
+
+**CMP-5 (MUST) — the "not in the catalog" protocol.** The CMP-2 table is a **floor, not a
+ceiling** — it lists the regions that exist today, not every element the app will ever need.
+An element with no catalog row is **never exempt** from the other rules (buttons, tokens,
+motion, a11y apply to everything). When you need something unlisted (a date-range picker, a
+stepper, a file-drop zone, a tag input…):
+
+1. **Check the primitives layer first** (`src/components/ui/` — most "missing" elements are an
+   existing primitive plus composition).
+2. **Grep for prior art.** If ≥2 screens already hand-roll it, do NOT add a third variant —
+   extract the best one into the shared location, migrate or backlog the others, then use it.
+3. **If genuinely new:** build it in the shared components location (never inline in one page),
+   obeying every rule in this file.
+4. **Register it: add a CMP-2 catalog row in the same PR.** The row is part of the definition
+   of done — a shared component without a row is drift-in-waiting.
+5. **Unsure whether it deserves to be shared?** Single-use, page-specific composition may live
+   with the page, but its *pieces* must still be catalog components/primitives. When in doubt,
+   the reviewer flags it WARN (`basis: judgment`) and a human decides.
 
 ---
 
@@ -451,6 +477,8 @@ encodes this; keep text alongside semantic color everywhere else too.
 
 - [ ] CMP-1/CMP-2 — checked `list/`, `layout/`, `settings/` for an existing composition
       component; every region uses its catalog component?
+- [ ] CMP-5 — anything NOT in the catalog: primitives checked, prior art grepped, built shared
+      (not inline), and its new catalog row added in this PR?
 - [ ] TYP-1 — heading uses `font-semibold tracking-tight truncate` (not `font-bold`)?
 - [ ] HDR-1/HDR-2 — document header via `DocumentPageHeader`; icon-only bare-button back arrow?
 - [ ] BTN-2 — only one primary button in this view?
