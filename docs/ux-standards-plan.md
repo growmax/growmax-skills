@@ -111,7 +111,12 @@ repos that contain `.claude/UI-STANDARDS.md` so it stays silent everywhere else.
 
 ---
 
-## Part 3 — the build plan (on go-ahead)
+## Part 3 — the build plan
+
+> **Status (2026-07):** Phases A–D are **built** on this branch (agent + two commands + hook,
+> all wired into `/feature-review` and validated). What remains is human/adoption work: copy the
+> files into the app repo, resolve the two OPEN decisions, and use it. Those items are marked
+> **TODO (human)** below.
 
 ### Phase A — standards into the app repo (30 min, mostly done)
 1. ✅ `examples/UI-STANDARDS.template.md` (this branch) — the portable standard: universal rules
@@ -119,29 +124,31 @@ repos that contain `.claude/UI-STANDARDS.md` so it stays silent everywhere else.
 2. ✅ `examples/UI-STANDARDS.md` (this branch) — the filled instance for the ink-on-paper app,
    incl. CMP-5 (off-catalog protocol).
 3. ✅ `examples/UX-DRIFT-BACKLOG.md` (this branch) — seeded with all 19 known items from v1 §11.
-4. Ink-on-paper app: copy the filled instance + backlog into that repo
+4. **TODO (human)** — Ink-on-paper app: copy the filled instance + backlog into that repo
    (`.claude/UI-STANDARDS.md`, `docs/ux-drift-backlog.md`); add the ~10-line "building UI?"
-   pointer to its `CLAUDE.md`. **Any other app:** copy the *template* and run its Bootstrap in
-   that repo instead.
-5. Owner resolves OPEN-1/OPEN-2 (toolbar height, primitive heights) — two small decisions.
+   pointer to its `CLAUDE.md`. **Any other app:** copy the *template* and run its Bootstrap
+   (via `/ux-audit` in bootstrap mode) in that repo instead.
+5. **TODO (human)** — Owner resolves OPEN-1/OPEN-2 (toolbar height, primitive heights).
 
-### Phase B — the reviewer agent (the one new agent)
-5. `agents/ui-standards-reviewer.md` — portable; reads `.claude/UI-STANDARDS.md` from the target
-   repo (if absent: reports "no standards file" and stops). Diff-scoped by default, module-scoped
-   when the orchestrator says so. Reports `{ruleId, severity from MUST/SHOULD, file:line,
-   evidence, suggested fix (the catalog component to use), basis}` — same confidence discipline
-   as the other reviewers. Skips anything already in the backlog or under *Accepted exceptions*
-   (the known-debt pattern from `/feature-review`). Model: haiku (mechanical Detect-hint checks);
-   judgment-y composition calls it marks `basis: judgment` for the orchestrator to verify.
-6. Wire into `/feature-review`: 5th row in the dispatch table (runs when `web`/`mobile` files
-   changed), `--only uxs` option, scorecard row "UI standards". Note the split with the existing
-   `ux-flow-reviewer`: **flow** = can the user finish the job (contextual creation, dead ends);
-   **standards** = is it built from the right parts with the right tokens. `ux-flow-reviewer`'s
-   "match the neighbour" check (#6) hands its component/token drift work to the new dimension —
-   trim it there to avoid double-flagging.
+### Phase B — the reviewer agent (the one new agent) — ✅ BUILT
+5. ✅ `agents/ui-standards-reviewer.md` — portable; reads `.claude/UI-STANDARDS.md` from the target
+   repo (if absent: returns `NO_STANDARD` and stops). Diff-scoped by default, module-scoped when
+   the orchestrator says so. Reports `{ruleId, severity from MUST/SHOULD, file:line, evidence,
+   suggested fix (the catalog component to use), basis}` — same confidence discipline as the other
+   reviewers. Skips anything already in the backlog or under *Accepted exceptions* (the known-debt
+   pattern from `/feature-review`). **Model: `sonnet`** — the value is the CMP-2/CMP-5 composition
+   judgment ("this hand-rolls a region a shared component owns"), which a cheap model misses; the
+   pure-mechanical `Detect:` tier is already caught for free by the write-time hook (Phase D), so
+   the agent doesn't need to be cheap to cover it.
+6. ✅ Wired into `/feature-review`: 5th row in the dispatch table (runs when `web`/`mobile` files
+   changed and a standard exists), `--only uxs` option, scorecard row "UI standards", `SKIPPED (no
+   standard)` fallback. The split with `ux-flow-reviewer` is documented in both commands: **flow**
+   = can the user finish the job (contextual creation, dead ends); **standards** = is it built from
+   the right parts with the right tokens. `ux-flow-reviewer`'s "match the neighbour" check (#6) was
+   trimmed to defer component/token drift to the new dimension — no double-flagging.
 
-### Phase C — the refactor workflow (two commands, reusing the agent)
-7. `commands/ux-audit.md` — census one module (or the app) against the standards: fan out
+### Phase C — the refactor workflow (two commands, reusing the agent) — ✅ BUILT
+7. ✅ `commands/ux-audit.md` — census one module (or the app) against the standards: fan out
    `ui-standards-reviewer` per module in parallel, verify findings (the `/feature-review`
    blocker-verification discipline), **append verified rows to `docs/ux-drift-backlog.md`**,
    present the delta for human priority-blessing. Mirrors `/e2e-map`. Two extra duties:
@@ -150,17 +157,19 @@ repos that contain `.claude/UI-STANDARDS.md` so it stays silent everywhere else.
    element hand-rolled on ≥2 screens → propose an extract-and-register backlog item per CMP-5,
    so the catalog converges on what the app actually needs instead of staying frozen at its
    seed list).
-8. `commands/ux-migrate.md` — work the approved backlog top-down: per item, fix (main session
+8. ✅ `commands/ux-migrate.md` — work the approved backlog top-down: per item, fix (main session
    edits, smallest diff that lands on the shared component) → re-run `ui-standards-reviewer` on
-   the touched files → flip status to `done (commit)` → commit per item or small batch.
-   Resumable from the ledger; app bugs discovered mid-migration get quarantined to the backlog,
-   never papered over. Mirrors `/e2e-batch`.
+   the touched files → flip status to `done` → commit per item or small batch. Resumable from the
+   backlog statuses; app bugs discovered mid-migration get quarantined, never papered over.
+   Mirrors `/e2e-batch`.
 
-### Phase D — the free tier
-9. `hooks/check-ui-standards.sh` + `hooks/hooks.json` entry — `PostToolUse` on Write/Edit of
-   `*.tsx`/`*.jsx`; greps the mechanical Detect patterns; warns with the rule ID; exits silently
-   unless the repo has `.claude/UI-STANDARDS.md`. Include a `--selftest` (team norm).
-10. README catalog rows + plugin-version bump; ship-note in the commit.
+### Phase D — the free tier — ✅ BUILT
+9. ✅ `hooks/check-ui-standards.sh` + `hooks/hooks.json` entry — `PostToolUse` on Write/Edit of
+   `*.tsx`/`*.jsx`/`*.ts`/`*.js`; a tight, high-precision grep (pill buttons, hover-shadow/
+   press-scale, hardcoded red on buttons, arbitrary `--ring`, synonym icons) citing the rule ID;
+   exits silently unless the repo has `.claude/UI-STANDARDS.md`. Ships a `--selftest` (passes:
+   5 caught in the bad fixture, 0 false positives in the good one).
+10. ✅ README catalog rows + plugin-version bump (1.17.0) + ship-note in the commit.
 
 ### Effort & sequencing
 - Phases A+B are the value core (~1 short session). C is a second session. D is ~an hour.

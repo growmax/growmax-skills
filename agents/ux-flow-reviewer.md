@@ -41,11 +41,12 @@ there — modal, sheet, or inline row — pre-filled from context, auto-selected
    spinner-forever or silent-error path is a finding.
 5. **Two-way linking.** A detail screen that references a related entity should link to it,
    and reachable-back (order → customer → their orders). One-way rabbit holes are WARN.
-6. **Match the neighbour.** Compare the new screen/section against the closest existing
-   sibling on the same surface (the overlay names the house component systems — shared
-   document components, section-card chrome, design tokens). Re-implemented chrome, hardcoded
-   style values where tokens exist, or a forked variant of a shared component is a finding —
-   drift is the expensive bug.
+6. **Match the neighbour (flow shape only).** Compare the new screen against its closest sibling
+   for *interaction* consistency — does this screen's create/edit/confirm flow behave like the
+   neighbour's? **Component/token/composition drift** (re-implemented chrome, hardcoded values
+   where tokens exist, a forked variant of a shared component) belongs to `ui-standards-reviewer`
+   when the repo ships `.claude/UI-STANDARDS.md` — don't double-flag it here; raise it only if no
+   UI standard exists in the repo (then it's yours, as before).
 7. **Permission-aware affordances.** A contextual-create button the user's role can't execute
    should be hidden/disabled per the repo's RBAC convention, not fail on submit.
 

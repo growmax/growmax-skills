@@ -5,11 +5,13 @@ description: >-
   "done" and before the PR: it scopes the diff against the base branch, then fans out four
   specialist reviewers in parallel — tdd-reviewer (does every changed behavior have a real,
   passing test?), ux-flow-reviewer (contextual creation / no dead-end flows on new UI),
-  scale-security-reviewer (what breaks at 10k rows? is every new surface authz'd, validated,
-  tenant-scoped?), and arch-advisor (advisory structure/reuse ideas). Verifies blockers, then
-  returns one scorecard with PASS/WARN/BLOCK per dimension and a fix route for every finding.
-  Use when asked to "review my feature", "run the end-of-dev checks", "is this ready for PR?".
-  Invoke with /feature-review [base-branch] [--only tdd|ux|scale|arch] [--strict].
+  ui-standards-reviewer (is the new UI built from the right shared components and design tokens,
+  per the repo's .claude/UI-STANDARDS.md?), scale-security-reviewer (what breaks at 10k rows? is
+  every new surface authz'd, validated, tenant-scoped?), and arch-advisor (advisory structure/
+  reuse ideas). Verifies blockers, then returns one scorecard with PASS/WARN/BLOCK per dimension
+  and a fix route for every finding. Use when asked to "review my feature", "run the end-of-dev
+  checks", "is this ready for PR?". Invoke with
+  /feature-review [base-branch] [--only tdd|ux|uxs|scale|arch] [--strict].
 ---
 
 # /feature-review — end-of-development multi-agent review
@@ -25,8 +27,9 @@ every delegation happens here.
 
 **Inputs:** `$ARGUMENTS` = optional base branch (default: the repo's default branch —
 `origin/main` / `origin/master` / whatever `origin/HEAD` points at), optional
-`--only <dimension>` to run a single reviewer (`tdd` | `ux` | `scale` | `arch`), optional
-`--strict` (promotes UX WARNs to BLOCKs — for teams that gate merges on flow continuity).
+`--only <dimension>` to run a single reviewer (`tdd` | `ux` | `uxs` | `scale` | `arch`), optional
+`--strict` (promotes UX-flow WARNs and UI-standard SHOULD violations to BLOCKs — for teams that
+gate merges on flow continuity and standards compliance).
 
 **Repo overlay:** if `.claude/REVIEW-NOTES.md` exists, read it FIRST and pass the relevant
 sections to each subagent. It carries the facts reviewers can't reliably infer: test commands
@@ -34,6 +37,12 @@ per surface, the repo's *blocking* house rules, pagination/index conventions, UX
 known accepted debt (so reviewers don't re-flag it), and the fix-route table. Without it,
 reviewers fall back to repo discovery (slower, noisier). A template lives at
 `examples/REVIEW-NOTES.template.md` in the growmax-skills repo.
+
+**UI standard:** the `ui-standards-reviewer` reads a *separate* per-repo doc,
+`.claude/UI-STANDARDS.md` (the component/token rulebook; template + instance in `examples/`). If
+that file is absent, that one reviewer returns `NO_STANDARD` and is reported as `SKIPPED (no
+standard)` — offer to bootstrap one via `/ux-audit` — while the other reviewers run normally.
+Anything already tracked in `docs/ux-drift-backlog.md` is known drift and is not re-flagged.
 
 ## Hard rules
 
@@ -70,8 +79,10 @@ reviewers fall back to repo discovery (slower, noisier). A template lives at
    `docs/other`. The overlay's surface table takes precedence over guessing.
 3. Read `.claude/REVIEW-NOTES.md` if present; extract per-dimension facts to forward.
 4. Decide which reviewers apply: `tdd` and `scale-security` always run when any non-docs code
-   changed; `ux-flow` runs only when `web`/`mobile` files changed; `arch-advisor` always runs
-   unless `--only` excludes it. Honor `--only`.
+   changed; `ux-flow` and `ui-standards` run only when `web`/`mobile` files changed (and
+   `ui-standards` only when `.claude/UI-STANDARDS.md` exists — else mark it `SKIPPED (no
+   standard)`); `arch-advisor` always runs unless `--only` excludes it. Honor `--only` (`uxs` =
+   ui-standards).
 
 ### Phase 1 — Fan out (parallel, single message)
 
@@ -88,9 +99,16 @@ same briefing:
 | Reviewer | Owns | Runs when |
 |---|---|---|
 | `tdd-reviewer` | test existence, quality, and a real run of the narrowest relevant suite | any code change |
-| `ux-flow-reviewer` | contextual creation (create-in-place), dead-end flows, empty/loading/error states, neighbour consistency | web/mobile changes |
+| `ux-flow-reviewer` | contextual creation (create-in-place), dead-end flows, empty/loading/error states | web/mobile changes |
+| `ui-standards-reviewer` | composition contract (compose-never-fork), button/filter/chip/icon/loading/form rules, motion budget, a11y baseline — per `.claude/UI-STANDARDS.md`, citing rule IDs | web/mobile changes AND a standard exists |
 | `scale-security-reviewer` | the 10k-row test (pagination, N+1, indexes, render perf) + authz, validation, tenant scoping, injection, secrets | any code change |
 | `arch-advisor` | structure/reuse/simpler-alternative ideas (advisory) | always |
+
+> **UX-flow vs UI-standards split (avoid double-flagging):** `ux-flow-reviewer` owns whether the
+> user can *finish the job* on the screen (flow continuity); `ui-standards-reviewer` owns whether
+> it's *built from the right parts* (shared components, tokens, rule IDs). Component/token drift
+> and "match the neighbour" belong to `ui-standards-reviewer` when a standard exists — if two
+> reviewers hit the same line, dedupe in Phase 2 keeping the standards finding (it cites a rule).
 
 ### Phase 2 — Verify & score confidence (you)
 
@@ -126,6 +144,7 @@ Report in this exact shape:
 |---|---|---|---|
 | TDD & tests        | PASS/BLOCK | n | n |
 | UX flow continuity | PASS/WARN(/BLOCK if --strict) | n | n |
+| UI standards       | PASS/WARN/BLOCK(/SKIPPED no standard) | n | n |
 | Scale & security   | PASS/BLOCK | n | n |
 | Architecture       | ADVISORY | — | n ideas |
 
