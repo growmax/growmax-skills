@@ -87,6 +87,7 @@ git pull                # later: symlinked skills update instantly
 | `e2e-map` | `/growmax-skills:e2e-map <target>` | Censuses the **whole app** into one categorized, approvable flow map (`docs/e2e-flow-map.md`) and holds the **single** human approval gate that authorizes autonomous suite generation. Before the gate it runs an **approval-gap review** so you act on a short digest of gaps instead of reading every row: `approval-gap-structural` (haiku — routes with no row, incomplete rows, unflagged writes, dupes) + `approval-gap-category` (sonnet — whole *kinds* of flow the census missed: permission-denied/cross-tenant negatives, empty/error states, pagination, per-role variants). Subagent: `flow-census`. |
 | `e2e-batch` | `/growmax-skills:e2e-batch <target>` | Generates the **approved** map autonomously through the `e2e-flow` pipeline with **no per-flow gate** — read-only flows unattended, write flows confirmed once. App bugs are quarantined, business ambiguities parked, and the batch keeps going; progress is a resumable ledger (`docs/e2e-coverage.md`). |
 | `ux-audit` | `/growmax-skills:ux-audit [module\|all]` | **Take stock of UI drift.** Censuses a module (or the whole app) against the repo's `.claude/UI-STANDARDS.md`, fanning out `ui-standards-reviewer` per module, **verifies** every finding (drops what it can't reproduce), and writes the survivors into the living work queue `docs/ux-drift-backlog.md` as approvable rows (rule ID + files + status). Holds **one** human gate to bless priorities — that approval authorizes `/ux-migrate`. **Bootstraps** the standard from `examples/UI-STANDARDS.template.md` (framework auto-detected: Next.js app/pages router, React+Vite) if the repo has none, and proposes **catalog growth** (CMP-5) when it finds the same element hand-rolled on ≥2 screens. Review-only. Mirrors `/e2e-map`. Subagent: `ui-standards-reviewer`. |
+| `build-ui` | `/growmax-skills:build-ui <request> [--strict]` | **Develop UI standards-first** — UI gets *born* compliant instead of audited into compliance later. The `ui-builder` agent loads the repo's `.claude/UI-STANDARDS.md` **before writing a line**, maps every screen region to the Part B catalog (compose, never fork; CMP-5 off-catalog protocol — primitives first, extract prior art, register a catalog row in the same change), builds with the Part A rules on (buttons/actions/filters/chips/loading/icons/forms/motion/a11y/tokens), and self-checks the `Detect:` patterns on every touched file. Then `ui-standards-reviewer` **independently verifies** the touched files — builder never gets the final word on its own compliance — looping fix→re-verify (cap 3) until PASS. Backed by an always-on **enforcement trigger** (see hooks below): a prompt-time hook detects UI-building intent and routes it here, and a **write-gate blocks `.tsx`/`.jsx` writes until the session has read the standard**. Bootstraps the standard from the template if the repo has none. Subagents: `ui-builder` + `ui-standards-reviewer`. |
 | `ux-migrate` | `/growmax-skills:ux-migrate [scope\|ID]` | **Pay UI drift down.** Works the approved `docs/ux-drift-backlog.md` top-down: per item, applies the **smallest behavior-preserving diff that lands on the shared component/token** (compose, never restyle or fork), **re-runs `ui-standards-reviewer`** on the touched files to confirm the rule is now clean, flips the row to `done`, and commits per item citing the rule ID. Shared-component fixes first (one edit fixes every downstream screen). Non-blocking: items that turn out to need a real refactor are `blocked`, app bugs are **quarantined** (never papered over to force a rule green), product-ambiguous ones are `parked` — the run continues and is resumable from the backlog statuses. Mirrors `/e2e-batch`. |
 
 > **Per-repo overlay:** the agents read repo-specific facts (ports, login, naming/teardown
@@ -97,9 +98,9 @@ git pull                # later: symlinked skills update instantly
 > routes — plus a per-run ledger it appends to itself: `.claude/feature-review-ledger.md`
 > (template: `examples/REVIEW-LEDGER.template.md`).
 >
-> **UI standards overlay:** `ui-standards-reviewer`, `/ux-audit`, and `/ux-migrate` read a
-> per-repo `.claude/UI-STANDARDS.md` (the component/token rulebook, cited by rule ID) and the
-> living work queue `docs/ux-drift-backlog.md`. Two seed files ship in `examples/`:
+> **UI standards overlay:** `ui-builder`, `ui-standards-reviewer`, `/build-ui`, `/ux-audit`,
+> and `/ux-migrate` read a per-repo `.claude/UI-STANDARDS.md` (the component/token rulebook,
+> cited by rule ID) and the living work queue `docs/ux-drift-backlog.md`. Two seed files ship in `examples/`:
 > `UI-STANDARDS.template.md` (framework-agnostic rules + a placeholder catalog + a bootstrap
 > procedure — copy this into a **new** app and let `/ux-audit` fill it in) and `UI-STANDARDS.md`
 > (a filled instance for the ink-on-paper admin app — a worked example, don't copy its paths),
@@ -113,6 +114,23 @@ git pull                # later: symlinked skills update instantly
 > that ship `.claude/UI-STANDARDS.md`** — a tight, high-precision grep for pill buttons, hover
 > shadows/press-scale, hardcoded red on buttons, arbitrary `--ring` forms, and synonym icons,
 > citing the rule ID). Both exit silently on everything else.
+>
+> **Heads-up — the UI-standards enforcement trigger** (`hooks/ui-standards-gate.sh`, one script
+> on three events, active **only in repos that ship `.claude/UI-STANDARDS.md`**, opt out with
+> `GROWMAX_UI_GATE=0`):
+> - `UserPromptSubmit` — detects UI-building intent ("build/add/create a page/component/modal/
+>   form…") and injects a context line routing the session to `/build-ui` + the `ui-builder`
+>   agent *before any code is written*.
+> - `PreToolUse` (`Write|Edit`) — the **hard gate**: blocks writes to `.tsx`/`.jsx` component
+>   files (tests/stories/vendored code exempt) until the session has actually read
+>   `.claude/UI-STANDARDS.md`. The deny message tells Claude how to unlock, so it
+>   self-corrects in one step.
+> - `PostToolUse` (`Read`) — reading the standard drops a session-keyed marker that unlocks the
+>   gate for the rest of the session.
+>
+> Together: intent → routed to the standards-first builder; write → impossible without the
+> rulebook open; after-write → the mechanical grep still nudges; end-of-branch →
+> `/feature-review`'s `ui-standards-reviewer` dimension is the final judge.
 
 ## Add a new skill
 
