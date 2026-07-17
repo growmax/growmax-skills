@@ -1,10 +1,10 @@
 ---
-name: ui-reuse-check
+name: ui-builder
 description: "Before building ANY apps/web-vite UI, resolve a UI request to the exact shared component to reuse. Reads the rulebook (.claude/UI-STANDARDS.md Table 1 region→component, Table 0 paths, Table 2 icons, Table 3 tokens) and returns: the shared component to compose, the Part A rules that apply, and a CMP-5 verdict (reuse / extend / new). Read-only — points, never writes. Use whenever a prompt asks to create/add/build a page, screen, table, form, list, header, dialog, filter, chart, or any web-admin UI element."
-trigger: /ui-reuse-check
+trigger: /ui-builder
 ---
 
-# /ui-reuse-check — pre-build shared-component resolver
+# /ui-builder — pre-build shared-component resolver
 
 **Purpose.** Turn a UI request into a reuse decision *before any code is written*, so a new
 screen composes the one shared component instead of hand-rolling a divergent copy. This is the

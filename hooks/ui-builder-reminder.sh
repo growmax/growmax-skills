@@ -44,7 +44,7 @@ if printf '%s' "$lc" | grep -Eq "($verb_re)" && printf '%s' "$lc" | grep -Eq "($
 This looks like a request to build web-admin UI (apps/web-vite). Before hand-rolling
 anything, RESOLVE THE SHARED COMPONENT FIRST:
 
-  • Run  /ui-reuse-check <what you're building>  — it maps the request to the exact shared
+  • Run  /ui-builder <what you're building>  — it maps the request to the exact shared
     component (UI-STANDARDS.md Table 1), the Part A rules in play, and a CMP-5 verdict
     (reuse / extend / new).
   • Compose the shared unit; never fork a divergent copy (CMP-1/2/4, CR-REUSE).

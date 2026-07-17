@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ui-reuse-check-reminder.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ui-builder-reminder.sh"
           }
         ]
       }

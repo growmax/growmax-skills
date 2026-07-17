@@ -1,5 +1,5 @@
 ---
-name: ui-reuse-check-resolver
+name: ui-builder-resolver
 description: Pre-build shared-component resolver for apps/web-vite UI. Given a UI request for ANY module (sales, purchase, quotes, invoices, returns, inventory, customers, settings…), returns the exact shared component to reuse, the Part A rules in play, and a CMP-5 verdict (reuse / extend / new) — so a new screen composes the one shared unit instead of hand-rolling a divergent copy. Read-only; points, never writes. Delegate to it before building any admin-web UI, or when deciding whether two module screens should share components.
 tools: Read, Grep, Glob
 model: sonnet
@@ -19,7 +19,7 @@ runs a different design language" and stop.
    **Table 0** (paths), **Table 2** (icons), **Table 3** (tokens), **Part A** (universal rules).
 2. If a rule cites `apps/web-vite/DESIGN.md`, `DESIGN.md` wins on conflict.
 
-You also pair with the `/ui-reuse-check` skill (`skills/ui-reuse-check/SKILL.md (plugin)`) — same contract.
+You also pair with the `/ui-builder` skill (`skills/ui-builder/SKILL.md (plugin)`) — same contract.
 
 ## The problem you exist to solve
 

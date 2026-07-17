@@ -18,9 +18,9 @@ copy #3, each slightly different.
 
 | File | What it is | How you use it |
 |---|---|---|
-| `hooks/ui-reuse-check-reminder.sh (plugin)` | A hook that fires automatically when you prompt to build web UI | Nothing to do — it just reminds you |
-| `skills/ui-reuse-check/SKILL.md (plugin)` | The `/ui-reuse-check` slash command | Type `/ui-reuse-check <what you're building>` |
-| `agents/ui-reuse-check-resolver.md (plugin)` | A delegatable subagent (same logic, own context) | "Use the ui-reuse-check-resolver agent to resolve …" |
+| `hooks/ui-builder-reminder.sh (plugin)` | A hook that fires automatically when you prompt to build web UI | Nothing to do — it just reminds you |
+| `skills/ui-builder/SKILL.md (plugin)` | The `/ui-builder` slash command | Type `/ui-builder <what you're building>` |
+| `agents/ui-builder-resolver.md (plugin)` | A delegatable subagent (same logic, own context) | "Use the ui-builder-resolver agent to resolve …" |
 
 All three read **one rulebook**: `.claude/UI-STANDARDS.md` (Part B Table 1 = region → component).
 They are **read-only** — they point at the right component; they never edit code.
@@ -37,11 +37,11 @@ We already had the *after-the-fact* tools. This adds the *before* step:
 
 ```
 BEFORE build   →   at build   →   before PR      →   periodic sweep
-/ui-reuse-check          compose the     /feature-review    /ux-audit → /ux-migrate
+/ui-builder          compose the     /feature-review    /ux-audit → /ux-migrate
 (this agent)       shared unit     (review gate)      (fix old drift)
 ```
 
-- **`/ui-reuse-check` (new)** — prevents drift being written.
+- **`/ui-builder` (new)** — prevents drift being written.
 - **`/feature-review`** — catches drift in review.
 - **`/ux-audit` + `/ux-migrate`** — sweep drift that already exists.
 
@@ -54,12 +54,12 @@ Two ways, pick either:
 
 **1. Slash command (inline, fastest):**
 ```
-/ui-reuse-check a suppliers list page with a table, filters, and a create button
+/ui-builder a suppliers list page with a table, filters, and a create button
 ```
 
 **2. Agent (runs in its own context, doesn't clutter chat):**
 ```
-Use the ui-reuse-check-resolver agent to resolve a suppliers list page with a table and filters.
+Use the ui-builder-resolver agent to resolve a suppliers list page with a table and filters.
 ```
 
 **3. Hook (automatic):** just start a prompt like "add a returns page with a table" — the reminder
