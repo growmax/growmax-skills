@@ -1,0 +1,23 @@
+{
+  "skill_name": "plain-explainer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "can you explain about what is a vector database?",
+      "expected_output": "Plain one-line definition (category first, no jargon), then why-anyone-needs-it broken down by role (e.g. developer, ML engineer), who does NOT need it, and the honest catch. No marketing buzzwords echoed uncritically. Reader should not need to ask 'now explain simply'.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "tell me about Kubernetes",
+      "expected_output": "Plain definition first, role-based use cases (developer / platform engineer / business owner), explicit 'who does NOT need it' (small apps, single server), and the real catch (operational complexity/cost). Buzzwords like 'cloud-native' translated, not repeated.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "explain what a checksum is",
+      "expected_output": "Plain definition + a concrete anchor/example. This is a neutral factual concept with no marketing to strip, so the skill should NOT manufacture a fake 'hype vs reality' section. Short.",
+      "files": []
+    }
+  ]
+}
