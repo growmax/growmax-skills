@@ -58,9 +58,13 @@ warning to run `/learn-app`.
 - **Async by design.** `/learn-app` never blocks waiting for you; ambiguity goes to the ledger.
 - **No invented truth.** Guesses are tagged `[ASSUMPTION]` and mirrored as ledger questions. The
   product-manager agent may not state an untagged/assumed claim as fact.
-- **Secrets redacted** at capture time and grepped again before commit.
-- **Resumable.** State lives in `docs/nav-manifest.json` + the notebook itself; a crash or fresh
-  session resumes where it stopped instead of restarting.
+- **Secrets redacted** at capture time and grepped again before commit (a redaction hit blocks the
+  commit — findings are reported, never staged).
+- **Budget-bounded.** A token ceiling is a hard cap, not a request; on a trip the engine
+  auto-commits the safe partial and prints a resume line.
+- **Resumable.** Every run's agent calls are journaled; a crash or budget bail resumes from the
+  run id with finished calls served from cache and only unfinished work re-executing (see
+  "The engine" below). Notebook state also lives in `docs/nav-manifest.json` + the notes themselves.
 
 ## Validating it on a repo you know well (recommended first run)
 
@@ -79,32 +83,79 @@ knowledge — the test only counts if the answer key is in YOUR head:
 
 If all seven pass, trust it on the repos that matter.
 
+## The engine (how the pipeline runs)
+
+The census → shard → write → assemble → verify → commit procedure runs as a **deterministic
+Workflow program** (`workflows/learn-app.workflow.js`), not prose the model re-interprets each run.
+The AI is still the brain — reading code, writing notes, judging ambiguity — but the *steps* can no
+longer be skipped, reordered, or miscounted. Watch the progress groups: Preflight → Census → Walk →
+Write (shard waves) → Audit → Assembly → Verify → Commit; each phase logs what it did and the
+tokens spent so far.
+
+**Design guarantees (why this is safer than prose):**
+- **Tally by set equality** — every census surface ID must appear in exactly one shard's
+  placed/uncategorized/parked array, computed by the script; a gap triggers one remediation
+  dispatch, then honest failure. No self-graded coverage.
+- **One writer per file per run** — shards own their module notes; assembly owns the top-level
+  files; the manifest has a single writer; the ledger is upsert-only (existing entries — possibly
+  holding your typed answers — are untouchable by everything except fold).
+- **Only Commit commits**, behind a redaction gate (findings → no commit, reported instead).
+- **No credentials in prompts** (the journal is durable): walks run anonymous or with creds the
+  repo itself documents in plaintext.
+- **Model tiering:** opus census · sonnet scribes/walk/drift/audit · haiku for preflight, manifest
+  write, format scan, verify, commit.
+
+**The walk is continuous.** Each batch runs as a disposable subagent, so the orchestrator's context
+stays flat no matter how many surfaces — the walk covers a whole app in one run without stopping to
+ask (the only stop is the budget). It runs in **both bootstrap and update** mode: on an existing
+notebook, `/learn-app <url>` walks the still-unwalked priority surfaces (money-path first, skipping
+`[walk]`-tagged ones), upgrades those notes' `[code]` claims to `[walk]`, updates the flow status
+table, hardens `ui-patterns.md`, and routes findings to `suggestions.md` — the "raise MEDIUM → HIGH
+by walking" path, no rebuild required.
+
+**Resume.** If a run dies or bails on budget: (1) the engine already committed completed work
+(`docs(product): partial — …`); (2) re-invoke the Workflow tool with the SAME scriptPath,
+**byte-identical args** (yes, the same `timestamp` — changing any arg invalidates the cache), and
+`resumeFromRunId: <the run id>`; (3) finished calls return instantly from cache, only unfinished
+work executes. Disk writes are idempotent full-file overwrites, so a re-run shard converges to the
+same bytes.
+
+**The knobs** (Workflow args — defaults are sensible):
+
+| Knob | Default | What it does |
+|---|---|---|
+| `shardSize` | 8 | Modules per scribe shard (sharding engages above 10 modules) |
+| `waveSize` | 4 | Shards running in parallel per wave |
+| `walkBatchSize` | 6 | Surfaces per walker dispatch (walk is sequential — one browser) |
+| `maxWalkWaves` | 3 | Bounded loop over newly-discovered links |
+| `walkScope` | `priority` | W/write + gated surfaces first, capped at `priorityWalkCap`. `all` = everything |
+| `maxWalkBatchesPerRun` | 30 | Batch backstop per run; the rest resumes next run — partial walks are first-class |
+| `audit` | true | Sample ~10 `[code]` claims, re-verify vs source, accuracy % into INDEX |
+| `budgetPerShardEst` / `landingReserve` | 120k / 150k | A wave starts only if `remaining > wave·est + reserve`; on trip: commit partial + resume |
+
 ## Deferred improvements (TODO — each with its trigger)
 
-Agreed with the product owner (2026-07-06) as future work, deliberately not built yet:
-
-1. **Audit mode** — periodically (monthly-ish) sample ~20 random `[code]` claims from a real
-   notebook, re-verify them against the source, and publish an accuracy % in INDEX's confidence
-   block. Trigger: once notebooks are in steady production use. (Until then the human's manual
-   spot-checks are the audit.)
-2. **Run telemetry** — a "Last run" block in INDEX: date, mode, shards, notes touched, new/folded
-   questions, and the ledger answer-rate, so loop health is visible. Trigger: same as above.
-3. **Mechanical write-block on the walk** — network-level interception that blocks every non-GET
+1. **Run telemetry** — a "Last run" block in INDEX: date, mode, shards, notes touched, new/folded
+   questions, and the ledger answer-rate, so loop health is visible. Trigger: once notebooks are in
+   steady production use.
+2. **Mechanical write-block on the walk** — network-level interception that blocks every non-GET
    request except the login call, underneath the existing prompt rule + test-account requirement.
    Defense in depth: a misread instruction becomes harmless. Trigger: before walks run unattended
    or against shared environments.
-4. **Workflow-engine migration** — move the deterministic loop (census → shard → checkpoint →
-   assemble → tally) from prose instructions to the Workflow tool; agents keep the judgment work.
-   Trigger: the day runs go unattended (CI auto-refresh, scheduled runs, teammates running it
-   without supervision). Unattended + prose-interpreted procedure is the bad combination.
+3. **Env-var credential injection into walks** — after the mechanical write-block hardening lands.
+4. **CENSUS payload compression** for 300+ surface apps — when a census return exceeds ~50k tokens.
 5. **Retrieval at scale** — when a notebook exceeds ~100 notes or the PM agent misses notes that
    exist, run `/graphify` over `docs/product/` (notes are already cross-linked; the graph is
    nearly free) or add an embedding index.
 
 ## Pieces (for maintainers)
 
-- `commands/learn-app.md` — the orchestrator (mode detection, phases, context budget, hard rules).
-- `agents/product-scribe.md` — writes/maintains the notebook (bootstrap / fold / refresh modes).
+- `commands/learn-app.md` — the front door (gathers inputs, human-facing checks, invokes the
+  Workflow tool once, relays the report).
+- `workflows/learn-app.workflow.js` — the deterministic engine (census → shard → assemble → verify
+  → commit; batching, tally, resume, budget all live here).
+- `agents/product-scribe.md` — the scribe dispatched by the engine in scoped modes (bootstrap-shard
+  / refresh-shard / assembly / assembly-touchup / fold).
 - `agents/product-manager.md` — the PM persona that consumes the notebook.
 - Reused from this plugin: `flow-census` (static checklist), `nav-cartographer` (read-only walk),
   the `nav-manifest.json` schema shared with `/app-cartograph`.

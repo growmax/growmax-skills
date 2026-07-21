@@ -1,5 +1,5 @@
 export const meta = {
-  name: 'learn-app-v2',
+  name: 'learn-app',
   description: 'Build/refresh the product notebook (docs/product/) — deterministic engine',
   // NOTE: this is the full static MENU of possible phases, always shown in this order for BOTH
   // run modes. Any single run uses only a subset — the rest are skipped and (in the progress tree)
@@ -43,7 +43,7 @@ if (typeof _rawArgs === 'string') {
   const s = _rawArgs.trim()
   if (s === '' ) _rawArgs = {}
   else { try { _rawArgs = JSON.parse(s) } catch (e) {
-    throw new Error(`learn-app-v2 received a bare string arg (${JSON.stringify(s)}). This engine needs a STRUCTURED object {repoRoot (absolute path), timestamp 'YYYY-MM-DD', target?, scope?} — the /learn-app-v2 command must CONSTRUCT it, never forward the raw "$ARGUMENTS". A bare "localhost:3000" is a target, but repoRoot and timestamp cannot be inferred from it. See commands/learn-app-v2.md step 3.`)
+    throw new Error(`learn-app received a bare string arg (${JSON.stringify(s)}). This engine needs a STRUCTURED object {repoRoot (absolute path), timestamp 'YYYY-MM-DD', target?, scope?} — the /learn-app command must CONSTRUCT it, never forward the raw "$ARGUMENTS". A bare "localhost:3000" is a target, but repoRoot and timestamp cannot be inferred from it. See commands/learn-app.md step 3.`)
   } }
 }
 const A = Object.assign(
@@ -73,8 +73,8 @@ const A = Object.assign(
     budgetPerShardEst: 120000,
     landingReserve: 150000,
     // agent overrides — defaults are the production agents; the harness may substitute a
-    // registered agent when validating before the v2 agent is installed in the running plugin.
-    scribeAgent: 'growmax-skills:product-scribe-v2',
+    // registered agent (e.g. general-purpose) when validating engine mechanics in isolation.
+    scribeAgent: 'growmax-skills:product-scribe',
     censusAgent: 'growmax-skills:flow-census',
     walkerAgent: 'growmax-skills:nav-cartographer',
   },
@@ -916,7 +916,7 @@ Return pass, violations[{file, rule, detail}], counts{notesOnDisk, untagged, dup
   }
   rep.verify = v ? { pass: v.pass, violations: (v.violations || []).length } : { pass: false, violations: -1 }
 
-  const c = await commitStage(`${label} via learn-app-v2 engine`)
+  const c = await commitStage(`${label} via learn-app engine`)
   rep.commit = c && c.committed
     ? c.sha
     : c && c.redactionFindings && c.redactionFindings.length
