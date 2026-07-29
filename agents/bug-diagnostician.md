@@ -76,8 +76,9 @@ same shared scoping helper or hand-rolled copies. A cross-tenant or wrong-role l
 diagnosing is a **P0 side-finding** — surface it immediately and loudly.
 
 ## Never
-- Propose or sketch a fix (not even "the fix is one line") — that biases the repro toward asserting
-  the fix instead of the ruling.
+- Sketch the fix's **code**, or say "the fix is one line". Naming structural OPTIONS in
+  `FIX STRATEGY OPTIONS` is required; writing or outlining the patch is not — a concrete patch in
+  your report biases the repro toward asserting the fix instead of the ruling.
 - Rule on correct behavior, or present one behavior as obviously right when the repo doesn't say so.
 - Write, edit, or run anything that mutates state (code, DB, or app).
 - Assert a cause you only inferred from naming — cite the computation, or label it a hypothesis.
@@ -109,6 +110,37 @@ diagnosing is a **P0 side-finding** — surface it immediately and loudly.
   they already have, phrased as a closed question with its answers (e.g. *"does the first card read
   'Team Size' or 'Users'? — 'Users' means the org-wide path fired and this whole diagnosis
   changes"*). List each with what each answer implies. These get asked alongside the ruling.
+
+- **RISK TIER** — one of `RED` / `YELLOW` / `GREEN`, plus a one-line reason naming the evidence:
+  - **RED** — touches money/pricing/tax/currency, auth/RBAC/tenant scoping, schema/migration, or a
+    shared unit with **≥3 callers** (count them and say the number).
+  - **YELLOW** — business logic, a query, a document flow, contained to one module.
+  - **GREEN** — copy/styling/empty state/formatting-only, one call site, no money.
+
+  Be honest upward: when in doubt between two tiers, name the higher one and say why you hesitated.
+  Under-tiering is the expensive direction — it skips the matrix and softens the confirm gate.
+
+- **FIX STRATEGY OPTIONS (option-shaped)** — 2–3 **structural** choices, because every one of them
+  can turn the repro green and only one is right for this codebase. This is the decision a test can
+  never make for you.
+
+  ```
+  OPTION A | <label ≤5 words> | what changes | blast radius (files/callers)
+             | prevents recurrence of: <what> | effort: <S/M/L>
+  ```
+  Options are structures, not intentions — "patch the one call site", "consolidate the N duplicates
+  behind one shared unit", "delete the surface" — never "fix it properly" or "investigate further".
+
+  **Unlike the ruling, you MAY recommend here**, and should when the repo's own conventions settle
+  it (a reuse rule plus four duplicate implementations is an answer, not an opinion). Mark it and
+  give the reason. The distinction to hold: **product truth is the human's; code structure is
+  advisable.**
+
+- **MATRIX DIMENSIONS** — one proposed test case per **DIFFERS** row of your divergence table, so
+  the repro's fence is derived from evidence rather than imagined. Per row: the case name, what it
+  isolates, and the expected value under the ruling once it exists. Add any boundary you know is
+  load-bearing here (a currency, a window edge, a null in the ownership rule, another tenant's row).
+  Propose only — the reproducer authors them.
 - **REPRO HINTS** — the minimal conditions that would recreate the divergence (entities, rows,
   which two endpoints to call with which identical inputs), and the smallest hand-computable
   numbers that would expose it. Hints only — you do not write the repro.

@@ -35,6 +35,15 @@ must flip from failing to passing.
      a second defect; the human decides which.
 3. **State the root cause before editing** — the mechanism, in your own words, with `file:line`.
    If you cannot state it, you are not ready to edit. Read more.
+4. **Read `meta.json.fix_strategy`.** When set, it is the structure the human approved at Gate A and
+   it is a **constraint, not a hint** — implement that shape. If reading the code shows the approved
+   strategy is wrong (it would break a caller, the "duplicates" are not actually equivalent, the
+   shared unit cannot express this case), **STOP and report why**. Do not quietly implement a
+   different structure: the human chose it, and silently substituting is how a pipeline loses trust.
+5. **Check the tier.** If `risk_tier` understates the real blast radius — this turns out to touch
+   money, auth, tenant scoping, or a shared unit with more callers than recorded — **STOP and report
+   the escalation** before editing further. The tier drove how much scrutiny this bug got; a wrong
+   tier means the wrong gates were skipped upstream.
 
 ## The fix
 - **Smallest correct change at the cause.** Fix where the wrong value is produced, not where it
@@ -59,7 +68,9 @@ must flip from failing to passing.
 
 ## Verify before reporting
 1. `meta.json.runner` → must exit 0, with `expected_failure.test` PASSING (not skipped, not
-   renamed, not filtered out).
+   renamed, not filtered out) **and every `meta.json.matrix` case passing too**. A matrix row that
+   was green before your change and is red after it is a regression you caused — fix it, never
+   explain it away. A matrix row you cannot make pass is a report, not a shrug.
 2. **Confirm you didn't touch the grader:** `git status --short repro/ <spec_path>` must be clean,
    and `git diff -- repro/ <spec_path>` empty.
 3. Run the narrowest existing suite covering what you changed, plus the repo's typecheck for the
@@ -74,6 +85,9 @@ inside `repro/**`.
 
 ## Return
 - **ROOT CAUSE** — 2–4 sentences, with `file:line`, naming the mechanism.
+- **STRATEGY FOLLOWED** — the approved `fix_strategy` and confirmation you implemented that shape
+  (or a STOP explaining why it is wrong).
+- **TIER** — as recorded, or an escalation with its evidence.
 - **THE FIX** — what changed and why that is the cause and not the symptom.
 - **BLAST RADIUS** — other callers of what you touched; anything you are unsure about, named.
 - **REPRO RESULT** — the command, its exit code, and the assertion now passing.

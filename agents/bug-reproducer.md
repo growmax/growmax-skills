@@ -69,6 +69,48 @@ spec is inert without the env var.
 - Assert the specific field, not a snapshot blob. A future reader must see which number is wrong.
 - Multi-tenant apps: pin tenant AND role explicitly in every call.
 
+## The matrix — one fixture, many assertions
+
+A single case proves a single point. The matrix is the fence around the primary: extra assertions in
+the **same spec**, off the **same fixture**, pinning the boundaries one case cannot reach.
+
+**Table-driven, always.** One fixture, N assertions — never N spec files:
+
+```ts
+const CASES = [
+  { name: 'both surfaces agree on invoiced revenue', expected: 10 },   // ← the primary
+  { name: 'draft order excluded',                    expected: 10 },
+  { name: 'cancelled order excluded',                expected: 10 },
+  { name: 'window boundary: row exactly at `from`',  expected: 10 },
+  { name: 'other tenant\'s row never appears',       expected: 10 },
+];
+it.each(CASES)('$name', async ({ name, expected }) => { /* ... */ });
+```
+
+**Where rows come from:**
+1. **The diagnostician's MATRIX DIMENSIONS** — one per `DIFFERS` row of the divergence table. Each
+   isolates one dimension, so a failure names its own cause.
+2. **The standard checklist**, for any aggregation / money / list bug:
+   - **empty set** → 0, not `null`, `NaN`, or a crash
+   - **an excluded-state row present** — cancelled / draft / soft-deleted must not count
+   - **window boundary** — rows exactly at `from` and exactly at `to`
+   - **multi-currency** — if the app is multi-currency, one foreign-currency row
+   - **the null / "else" branch** of the ownership or attribution rule
+   - **a cross-tenant row that must NOT appear** — highest value in the list; this is the bug class
+     that ends companies
+   - **role variant** — the wrong role sees nothing, or is clamped
+
+Required at **YELLOW and RED** tier; optional at GREEN. Skip a checklist item only when it cannot
+apply, and say which and why in `repro.md`.
+
+**Only the primary must be red.** Most matrix rows will pass on today's code — that is a *successful
+guard*, not a failed reproduction. Record `red_today: false` and move on. Do NOT contort the fixture
+to redden a row, and do NOT delete a row because it passes: it is there to fail the day someone
+breaks it.
+
+Record every row in `meta.json.matrix` with its honest observed `red_today`. Keep the fixture small
+even as rows grow — extra rows should mostly be extra *assertions*, not extra data.
+
 ## The red-interrogation loop (the part that matters)
 Run the repro via the exact runner command. Then ask, before believing the red:
 
@@ -93,9 +135,10 @@ trivially false to manufacture red.
    the failing assertion verbatim; the seed data it depends on; the runner command; the env-gate
    note; a one-paragraph root-cause hypothesis (hypothesis ONLY — no fix, no patch sketch).
 3. **`repro/BUG-<id>/meta.json`** — the full contract from the `/confirm-bug` schema, with
-   `expected_failure` filled from the REAL observed values, `confirmed_by_human: false`,
-   `confirmed_commit: null`, and `runner` = the exact one-line command (including
-   `REPRO_BUG=BUG-<id>`) that runs ONLY this repro.
+   `expected_failure` filled from the REAL observed values, `matrix` filled with every row and its
+   honest `red_today`, `risk_tier` and `fix_strategy` carried through from Gate A,
+   `confirmed_by_human: false`, `confirmed_commit: null`, and `runner` = the exact one-line command
+   (including `REPRO_BUG=BUG-<id>`) that runs ONLY this repro.
 
 Keep run logs, traces, screenshots and report dirs OUT of the commit — the spec + the folder are
 the only durable outputs.
