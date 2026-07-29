@@ -35,7 +35,7 @@ meta.json.runner exits 0
   AND meta.json.expected_failure.test is present and PASSING
   AND every meta.json.matrix case is present and PASSING
   AND reverting the fix makes the primary FAIL again      ← causality, not correlation
-  AND git diff <meta.json.confirmed_commit> -- repro/BUG-<id>/ <spec_path>  is EMPTY
+  AND git diff repro-BUG-<id> -- repro/BUG-<id>/ <spec_path>  is EMPTY   (tag; legacy: confirmed_commit)
   AND the repo's own checks for the touched package(s) are green
 ```
 
@@ -73,8 +73,10 @@ fix from a coincidence: a green run alone cannot tell you the repro was ever tes
 ## Workflow
 
 ### Phase 0 — Verify the contract (you)
-Read `meta.json`. `confirmed_by_human` must be `true` and `confirmed_commit` set — if either is
-missing, stop: the repro was never frozen, so "unchanged since confirmation" is unprovable. Then
+Read `meta.json`. `confirmed_by_human` must be `true` AND an anchor must exist — the tag
+`repro-BUG-<id>` (`git rev-parse repro-BUG-<id>` succeeds), or on a legacy repro
+`confirmed_commit` set. Neither → stop: the repro was never frozen, so "unchanged since
+confirmation" is unprovable. Then
 run `meta.json.runner` yourself once and confirm it fails on the recorded assertion. Already green
 → report and stop (fixed elsewhere, or environment-dependent). Failing differently → report the
 delta and stop; the human decides whether that is drift or a second bug.
@@ -129,7 +131,7 @@ Reading the outcome:
 | `stash pop` fails | tree may be mid-restore | **LOUD stop.** Name the stash entry (`git stash list`) and the recovery command. Never leave a broken tree quietly |
 
 Keep the evidence (both runs' relevant output) for the Gate C report and the commit message. Do
-**not** write it into `repro/**` — that folder must stay byte-identical to `confirmed_commit`, and a
+**not** write it into `repro/**` — that folder must stay byte-identical to the confirmation tag, and a
 mutation log inside it would fail the validator's own check.
 
 ### Phase 2 — Validate (subagent: `fix-validator`)

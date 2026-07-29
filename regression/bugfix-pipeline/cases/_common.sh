@@ -86,11 +86,11 @@ EOF
 }
 
 confirm_repro() {
+  # ONE commit, then the tag — the tag is the sole anchor; confirmed_commit stays null (legacy
+  # field). A follow-up "record the SHA" commit would make tag-vs-meta disagree on every repro —
+  # the exact self-inflicted tamper signal eval round 1 caught (finding F1 in RESULTS.md).
   local bug="$1"
   git add -A && git commit -qm "confirm repro $bug (red on recorded assertion)"
-  local sha; sha="$(git rev-parse HEAD)"
-  sed -i "s/\"confirmed_commit\": null/\"confirmed_commit\": \"$sha\"/" "repro/$bug/meta.json"
-  git add -A && git commit -qm "record confirmation SHA for $bug"
   git tag "repro-$bug"
-  echo "confirmed $bug at $sha; tag repro-$bug -> $(git rev-parse HEAD)"
+  echo "confirmed $bug; tag repro-$bug -> $(git rev-parse HEAD)"
 }

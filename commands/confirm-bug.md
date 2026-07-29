@@ -85,8 +85,11 @@ auth and helpers), **env-gated so normal runs and CI never execute it while it i
 }
 ```
 
+(`confirmed_commit` is a **legacy** anchor for repros confirmed before tags existed — it stays
+`null` on new repros; the pushed tag `repro-BUG-<id>` is the authoritative baseline.)
+
 "Fixed" later means exactly: `runner` exits 0, `expected_failure.test` **and every `matrix` case**
-pass, and `git diff <confirmed_commit> -- repro/BUG-<id>/ <spec_path>` is EMPTY.
+pass, and `git diff repro-BUG-<id> -- repro/BUG-<id>/ <spec_path>` is EMPTY.
 
 ### The matrix: one fixture, many assertions
 
@@ -224,14 +227,19 @@ blocker; the repro stays unconfirmed).
 - **YELLOW / GREEN:** approval from the printed expected-vs-actual is enough. Offer the command, do
   not insist.
 
-On confirmation, freeze in THREE moves — the third is the one that can't be quietly undone:
-1. Flip `confirmed_by_human: true`, commit the repro folder + spec.
-2. Record that commit's SHA into `confirmed_commit` (follow-up commit).
-3. **Tag it and push the tag:** `git tag repro-BUG-<id> && git push origin repro-BUG-<id>`. The tag
-   is the validator's authoritative baseline — a later session can edit `meta.json`, but cannot
-   move a pushed tag without a force-push that GitHub tag protection (`repro-*` pattern; enable it
-   once per repo) blocks outright. If the push is refused or offline, say so — the freeze is
-   weaker until the tag lands.
+On confirmation, freeze in TWO moves — ONE commit, then the tag that can't be quietly undone:
+1. Flip `confirmed_by_human: true` (leave `confirmed_commit` **null** — see below), commit the
+   repro folder + spec as a single commit.
+2. **Tag that commit and push the tag:** `git tag repro-BUG-<id> && git push origin repro-BUG-<id>`.
+   The tag IS the confirmation record and the validator's authoritative baseline — a later session
+   can edit `meta.json`, but cannot move a pushed tag without a force-push that GitHub tag
+   protection (`repro-*` pattern; enable it once per repo) blocks outright. If the push is refused
+   or offline, say so — the freeze is weaker until the tag lands.
+
+Do NOT write the commit's SHA back into `meta.json` afterwards: a follow-up "record the SHA" commit
+moves the tree past the tag and makes tag-vs-meta disagree on every repro — a self-inflicted tamper
+signal (this exact defect was caught by the adversarial evals in `regression/bugfix-pipeline/`).
+`confirmed_commit` exists for legacy repros confirmed before tags; the tag supersedes it.
 
 Append one row to the run ledger `.claude/bugfix-ledger.md` (create with a header row on first
 use): `date · BUG id · tier · red-genuine-first-try? · repro attempts · matrix size · confirmed?`.

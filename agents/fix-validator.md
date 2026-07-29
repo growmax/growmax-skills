@@ -35,7 +35,10 @@ domain:
 
 1. **The confirmation tag** — `git rev-parse repro-BUG-<id>^{}`. When it exists, it is THE
    authority: a fixer can edit `meta.json` in the tree, but cannot move a pushed tag quietly.
-   If the tag and `meta.json.confirmed_commit` disagree, that disagreement is itself a tamper
+   If `meta.json.confirmed_commit` is also set and differs, check lineage:
+   `git merge-base --is-ancestor <confirmed_commit> <tag>` — an **ancestor** is the legacy
+   two-commit confirmation pattern (confirm, then record the SHA); note it and proceed with the
+   tag. **Not an ancestor** (or the tag is missing on a repro whose meta references one) → tamper
    signal → **FAIL**, and say both SHAs.
 2. `meta.json.confirmed_commit` — only when no tag exists (older repro); note the weaker anchor.
 3. The commit that introduced the repro — last resort; say you fell back.
