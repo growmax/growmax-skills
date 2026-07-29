@@ -170,7 +170,7 @@ initiative.
    it is the durable evidence that this repro actually guards this fix.
 4. Append one row to the run ledger `.claude/bugfix-ledger.md` (same file `/confirm-bug` writes;
    create with a header on first use): `date · BUG id · tier · fix loops · mutation result ·
-   verdict · human decision · promoted?`. After ~20 rows the **false-fixed rate** (validator said
+   verdict · human decision · agent tokens (approx) · promoted?`. After ~20 rows the **false-fixed rate** (validator said
    PASS, bug came back) is the pipeline's real assurance number — >5% means tighten the validator,
    not the workers.
 5. **Report honestly:** what changed, what the validator verified, what the mutation check proved,
@@ -190,3 +190,6 @@ initiative.
 - Side-findings the fixer trips over are reported as NEW candidate bugs, never folded into this
   one. Each gets its own `/confirm-bug`.
 - Keep run logs and diffs out of the main thread; the commit and the verdict are the record.
+- **Token hygiene:** pass each subagent the CONTRACT (`meta.json`, the ruling, the paths), never
+  transcripts or prior agents' full reports — the artifacts on disk are the interface, and a
+  subagent that needs more reads it itself in its own context.

@@ -242,8 +242,9 @@ signal (this exact defect was caught by the adversarial evals in `regression/bug
 `confirmed_commit` exists for legacy repros confirmed before tags; the tag supersedes it.
 
 Append one row to the run ledger `.claude/bugfix-ledger.md` (create with a header row on first
-use): `date · BUG id · tier · red-genuine-first-try? · repro attempts · matrix size · confirmed?`.
-Then stop. Report: BUG id, runner
+use): `date · BUG id · tier · red-genuine-first-try? · repro attempts · matrix size ·
+agent tokens (approx) · confirmed?`. Token cost is measured, not estimated — it is how the team
+decides where the pipeline earns its spend. Then stop. Report: BUG id, runner
 command, the frozen primary assertion, the matrix size, `risk_tier`, `fix_strategy`, and the handoff
 line — *"fix in a fresh session; the repro is the grader."* If the human says the red is wrong → back
 to Phase 2 with their correction (still unconfirmed, so it may be edited).
