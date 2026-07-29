@@ -117,10 +117,30 @@ disagree, ranks root-cause hypotheses with the evidence that discriminates them,
 CODE BUG from PRODUCT AMBIGUITY from DATA ISSUE. Read-only. Writes nothing.
 
 ### GATE 1 — Diagnosis + ruling (block)
-Present: the diagnosis, the ranked causes, and **the product question** — usually *"which behavior
-is correct?"* (e.g. two screens disagree on "revenue": same metric everywhere, or different
-metrics mislabeled?). The human's answer becomes the **expected-behavior contract** the repro
-asserts. Wait. Never rule yourself.
+Present the diagnosis and the ranked causes as text. Then **ask the ruling as a multiple-choice
+question via `AskUserQuestion`** — never as an open prose question the human has to compose an
+answer to. Use the `ruling_question` block the diagnostician returned, which already arrives in
+option shape.
+
+Rules for the ruling question:
+- **2–4 options**, each a *concrete behavior*, not a vague direction. Label ≤5 words
+  ("Invoiced revenue everywhere"); the description says what the repro would then assert and what
+  becomes the bug.
+- **Cite the evidence per option** (how many places in the codebase already behave that way,
+  which comment/sibling/spec endorses it) — evidence helps the human decide.
+- **Never mark an option "Recommended", and never pre-select one.** Ordering by weight of
+  code evidence is fine; steering is not. This gate exists precisely because the model must not
+  decide product truth.
+- **Ask the cheap factual discriminators in the same call** as additional questions — anything the
+  human can answer from the screenshot they already have (a label that flips when a flag is on, a
+  visible status, which window was selected). One of those can overturn the whole diagnosis, and
+  it costs them a glance.
+- Ask **only** what changes the repro. Anything derivable from the ruling is not a question.
+- If `AskUserQuestion` is unavailable, fall back to a numbered list and wait — but the options
+  must still be there.
+
+The chosen answer becomes the **expected-behavior contract** the repro asserts, and goes verbatim
+into `meta.json.ruling`. Wait for it. Never rule yourself, and never proceed on "probably X".
 
 ### Phase 2 — Reproduce (subagent: `bug-reproducer`)
 Dispatch with the diagnosis + the ruling + overlay facts + the BUG id. It rebuilds the CONDITIONS
@@ -130,6 +150,9 @@ exact runner, interrogates the failure, and returns a **REPRODUCTION SUMMARY**: 
 assertion, expected vs actual, the runner command. It never touches app source.
 
 ### GATE 2 — Confirm the red (block; ends the command)
+Print the runner command and the expected-vs-actual, then ask via `AskUserQuestion` with these
+options: **the red is correct** (freeze it) · **the red is wrong / not my bug** (back to Phase 2
+with their correction) · **couldn't run it** (report the blocker; the repro stays unconfirmed).
 The human runs `meta.json.runner` THEMSELVES and checks the failure is the one from the report —
 not setup noise. On their confirmation: flip `confirmed_by_human: true`, commit the repro folder +
 spec, record that commit's SHA into `confirmed_commit` (amend or follow-up commit), and stop.

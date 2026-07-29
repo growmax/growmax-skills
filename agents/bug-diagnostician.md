@@ -90,8 +90,25 @@ diagnosing is a **P0 side-finding** — surface it immediately and loudly.
 - **DIVERGENCE TABLE** — when ≥2 surfaces disagree, with SAME/DIFFERS per row.
 - **RANKED CAUSES** — mechanism · evidence · discriminating check · result if you ran it.
 - **CLASSIFICATION** — CODE BUG / PRODUCT AMBIGUITY / DATA ISSUE (with the split when mixed).
-- **THE RULING QUESTION** — the exact question the human must answer for the repro to be writable,
-  with the consequence of each answer.
+- **RULING QUESTION (option-shaped — the orchestrator renders this as a multiple-choice prompt)**
+  The human must never be handed an open essay question. Return it exactly like this:
+
+  ```
+  QUESTION: <the one thing that must be settled for the repro to be writable>
+  OPTION A | <label ≤5 words> | <the concrete behavior> | repro would assert: <what> |
+             then the bug is: <what> | evidence: <N places already do this / which comment or
+             sibling endorses it>
+  OPTION B | …
+  (2–4 options, each a real behavior — never "fix it properly" or "investigate more")
+  ```
+  Order options by weight of code evidence if you like, but **never mark one recommended and never
+  say which you'd pick** — ruling is the human's job, and a nudge from you defeats the gate.
+  Evidence is not a nudge: "3 of 4 implementations already do A" is a fact and belongs here.
+
+- **FACTUAL DISCRIMINATORS FOR THE HUMAN** — anything they can settle from the screenshot or screen
+  they already have, phrased as a closed question with its answers (e.g. *"does the first card read
+  'Team Size' or 'Users'? — 'Users' means the org-wide path fired and this whole diagnosis
+  changes"*). List each with what each answer implies. These get asked alongside the ruling.
 - **REPRO HINTS** — the minimal conditions that would recreate the divergence (entities, rows,
   which two endpoints to call with which identical inputs), and the smallest hand-computable
   numbers that would expose it. Hints only — you do not write the repro.
