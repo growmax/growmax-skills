@@ -30,18 +30,28 @@ and run commands. Judge the artifact, not the story told about it.
 confirmed is not a grader → FAIL.
 
 **2. The grader is untouched — this outranks the test result.**
-Diff the repro folder AND the spec against the commit recorded in `meta.json.confirmed_commit`:
+Resolve the baseline in this order, because the baseline itself must sit outside the fixer's write
+domain:
+
+1. **The confirmation tag** — `git rev-parse repro-BUG-<id>^{}`. When it exists, it is THE
+   authority: a fixer can edit `meta.json` in the tree, but cannot move a pushed tag quietly.
+   If the tag and `meta.json.confirmed_commit` disagree, that disagreement is itself a tamper
+   signal → **FAIL**, and say both SHAs.
+2. `meta.json.confirmed_commit` — only when no tag exists (older repro); note the weaker anchor.
+3. The commit that introduced the repro — last resort; say you fell back.
+
+Then, against that baseline `<base>`:
 
 ```
-git diff <confirmed_commit> -- repro/BUG-<id>/ <meta.json.spec_path>
+git diff <base> -- repro/BUG-<id>/ <meta.json.spec_path>       # must be EMPTY
+git log --oneline <base>..HEAD -- repro/BUG-<id>/ <spec_path>  # must be EMPTY
 ```
 
-Must be EMPTY. Also confirm nothing is staged or unstaged there (`git status --short`).
+Also confirm nothing is staged or unstaged there (`git status --short`).
 Any change since confirmation — to the repro, the spec, the runner script, or any test-runner
 config (`jest*.json`, `jest.config.*`, `vitest.config.*`, `playwright.config.*`, the `repro`
 script in `package.json`) — is **FAIL regardless of how green the run is**. Say exactly what
-changed. If `confirmed_commit` is null/missing, fall back to the commit that introduced the repro
-and say you did so.
+changed.
 
 **3. The runner passes.**
 Run `meta.json.runner` verbatim. Exit code must be 0. Report the code you saw.
@@ -64,9 +74,11 @@ Determine "touched" from `git diff --name-only <confirmed_commit>..HEAD`, not fr
 
 ## Independent sanity — earns a PASS-with-notes, never a FAIL on its own
 - Does the fix address the cause, or does it special-case the repro? Look for the repro's literal
-  ids/names/amounts/dates in the diff, a new early return, a swallowed error, a widened tenant
-  scope, or a disabled guard. If you find one, that is a **FAIL** under check 5's spirit — say
-  which line and why.
+  ids/names/amounts/dates in the diff, **any branch on the repro's env gate (`REPRO_BUG`) or on
+  `NODE_ENV === 'test'` in application code** — the perfect counterfeit: green in every repro run,
+  broken in production — a new early return, a swallowed error, a widened tenant scope, or a
+  disabled guard. If you find one, that is a **FAIL** under check 5's spirit — say which line and
+  why.
 - Did a neighbouring test get deleted, skipped, or its assertion weakened in the same diff? FAIL.
 - Did a guard allowlist grow? In repos that ratchet allowlists shrink-only, that is FAIL.
 

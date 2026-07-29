@@ -134,6 +134,12 @@ trivially false to manufacture red.
 2. **`repro/BUG-<id>/repro.md`** — trigger conditions; expected vs actual (with the ruling quoted);
    the failing assertion verbatim; the seed data it depends on; the runner command; the env-gate
    note; a one-paragraph root-cause hypothesis (hypothesis ONLY — no fix, no patch sketch).
+**The runner must speak data, not prose.** Downstream, the validator confirms your named test and
+every matrix row actually ran and passed — parsing human-readable reporter text for that is
+fragile (reporters vary; `it.each` interpolates names). So `meta.json.runner` includes a
+machine-parseable reporter: jest → `--json`; vitest → `--reporter=json`; playwright →
+`--reporter=json`; node:test → `--test-reporter=tap`. Verify your own red through the same output.
+
 3. **`repro/BUG-<id>/meta.json`** — the full contract from the `/confirm-bug` schema, with
    `expected_failure` filled from the REAL observed values, `matrix` filled with every row and its
    honest `red_today`, `risk_tier` and `fix_strategy` carried through from Gate A,

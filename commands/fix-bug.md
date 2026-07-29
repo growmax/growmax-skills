@@ -135,8 +135,10 @@ mutation log inside it would fail the validator's own check.
 ### Phase 2 — Validate (subagent: `fix-validator`)
 Dispatch with **the BUG id and nothing else** — no diff, no fixer report, no rationale. Its context
 must be clean so it grades the artifact rather than the story. It runs the five checks (contract ·
-grader-untouched-vs-confirmed_commit · runner exit 0 · primary **and every matrix case** present and
-passing · repo checks green) and returns `VERDICT: PASS | FAIL` with evidence.
+grader-untouched vs the **confirmation tag** `repro-BUG-<id>` (the tag outranks `meta.json` — a
+moved or missing tag on a repro that should have one is itself a tamper signal) · runner exit 0 ·
+primary **and every matrix case** present and passing, parsed from the runner's machine-readable
+reporter output · repo checks green) and returns `VERDICT: PASS | FAIL` with evidence.
 
 It does **not** run the mutation check — deliberately. It has no write tools, which is what makes it
 trustworthy, and revert/reapply needs them. Causality is proven in Phase 1.5 and travels in the Gate
@@ -164,7 +166,12 @@ initiative.
 3. Commit the fix + the promotion (never the repro's content — that is already committed and
    unchanged). Reference the BUG id, and record the mutation-check result in the commit message —
    it is the durable evidence that this repro actually guards this fix.
-4. **Report honestly:** what changed, what the validator verified, what the mutation check proved,
+4. Append one row to the run ledger `.claude/bugfix-ledger.md` (same file `/confirm-bug` writes;
+   create with a header on first use): `date · BUG id · tier · fix loops · mutation result ·
+   verdict · human decision · promoted?`. After ~20 rows the **false-fixed rate** (validator said
+   PASS, bug came back) is the pipeline's real assurance number — >5% means tighten the validator,
+   not the workers.
+5. **Report honestly:** what changed, what the validator verified, what the mutation check proved,
    what is still unverified (e.g. "the currency side-finding is untouched — separate bug"), and any
    risk you would watch.
 

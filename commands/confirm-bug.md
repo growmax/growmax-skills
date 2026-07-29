@@ -61,9 +61,9 @@ auth and helpers), **env-gated so normal runs and CI never execute it while it i
   "bug_id": "BUG-142",
   "title": "<one line>",
   "surface": "api | web",
-  "artifact_type": "jest-e2e | playwright | vitest",
+  "artifact_type": "jest-e2e | playwright | vitest | node-test",
   "spec_path": "<path to the env-gated spec>",
-  "runner": "<exact command that runs ONLY this repro, incl. REPRO_BUG=BUG-142>",
+  "runner": "<exact command that runs ONLY this repro, incl. REPRO_BUG=BUG-142 AND a machine-parseable reporter>",
   "expected_failure": {
     "test": "<exact test name that must fail pre-fix>",
     "assertion": "<the specific field/value asserted>",
@@ -148,6 +148,14 @@ the exact code path behind each (file:line), builds the divergence table when tw
 disagree, ranks root-cause hypotheses with the evidence that discriminates them, and separates
 CODE BUG from PRODUCT AMBIGUITY from DATA ISSUE. Read-only. Writes nothing.
 
+### Phase 1.5 — Tier floor (you; deterministic, no interrupt)
+The diagnostician *proposes* a tier; you enforce a floor, because under-tiering is prompt-level and
+cheap to backstop. If the repo overlay has a `TIER FLOORS` section (glob → tier), apply it;
+otherwise the default: any cited path matching
+`pricing|billing|payment|invoice|tax|currency|auth|rbac|tenant|migration|schema` → floor **RED**.
+`final_tier = max(proposed, floor)` — a floor can only raise, never lower. Record `final_tier` as
+`meta.json.risk_tier` and say so when you raised it.
+
 ### GATE A — Diagnosis · ruling · strategy (block; ONE interrupt)
 Present the diagnosis and the ranked causes as text. Then issue **exactly one `AskUserQuestion`
 call** carrying up to three questions:
@@ -216,8 +224,18 @@ blocker; the repro stays unconfirmed).
 - **YELLOW / GREEN:** approval from the printed expected-vs-actual is enough. Offer the command, do
   not insist.
 
-On confirmation: flip `confirmed_by_human: true`, commit the repro folder + spec, record that
-commit's SHA into `confirmed_commit` (amend or follow-up commit), and stop. Report: BUG id, runner
+On confirmation, freeze in THREE moves — the third is the one that can't be quietly undone:
+1. Flip `confirmed_by_human: true`, commit the repro folder + spec.
+2. Record that commit's SHA into `confirmed_commit` (follow-up commit).
+3. **Tag it and push the tag:** `git tag repro-BUG-<id> && git push origin repro-BUG-<id>`. The tag
+   is the validator's authoritative baseline — a later session can edit `meta.json`, but cannot
+   move a pushed tag without a force-push that GitHub tag protection (`repro-*` pattern; enable it
+   once per repo) blocks outright. If the push is refused or offline, say so — the freeze is
+   weaker until the tag lands.
+
+Append one row to the run ledger `.claude/bugfix-ledger.md` (create with a header row on first
+use): `date · BUG id · tier · red-genuine-first-try? · repro attempts · matrix size · confirmed?`.
+Then stop. Report: BUG id, runner
 command, the frozen primary assertion, the matrix size, `risk_tier`, `fix_strategy`, and the handoff
 line — *"fix in a fresh session; the repro is the grader."* If the human says the red is wrong → back
 to Phase 2 with their correction (still unconfirmed, so it may be edited).

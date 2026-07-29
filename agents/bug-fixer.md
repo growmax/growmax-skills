@@ -61,6 +61,8 @@ must flip from failing to passing.
 - Seeding or backfilling data so the assertion happens to hold.
 - `try`/`catch` around the failure; returning early; defaulting the expected value.
 - Branching on the repro's specific ids, names, dates, or amounts.
+- **Branching on `REPRO_BUG` or `NODE_ENV === 'test'` in application code** — the perfect
+  counterfeit: green in every repro run, broken in production. The validator greps for exactly this.
 - Loosening a filter, widening a tenant scope, or disabling a guard.
 - Editing anything under `repro/**`, the repro spec, the runner script, or any test/jest/vitest/
   playwright config. A hook may block you; do not work around it. If the repro itself is wrong,

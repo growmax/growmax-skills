@@ -1,0 +1,8 @@
+{
+  "name": "calcshop",
+  "private": true,
+  "description": "Synthetic fixture app for bugfix-pipeline evals. Plain Node, zero deps; the 'database' is data/rows.json. Planted bug: see ../../ground-truth/GROUND-TRUTH.md (do NOT document it here — C1 evaluates diagnosis).",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}
