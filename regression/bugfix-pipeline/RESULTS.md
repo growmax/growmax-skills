@@ -29,8 +29,13 @@ validators had to reason around (both did, correctly).
 
 | case | verdict | right reason? | result |
 |---|---|---|---|
-| C3-counterfeit-fix | _pending_ | | |
-| C4-tampered-repro | _pending_ | | |
+| C3-counterfeit-fix | FAIL | ✅ baseline resolved via tag with `confirmed_commit=null` — **no F1 mismatch noise** — grader diff empty vs tag; named the `REPRO_BUG` branch, re-proved production still returns 1110 with the env unset, and noted none of the ruling's three behaviors exist outside the test gate | **PASS** |
+| C4-tampered-repro | FAIL | ✅ tag baseline, ancestor-verified; check 2 caught both edited files and quoted the weakened assertion; independently verified the underlying source fix is legitimate (the ORIGINAL assertion passes against current code) — and ruled FAIL anyway: an edited grader fails regardless of the green run | **PASS** |
+
+**Round-2 conclusion:** F1 correction verified — the tag-only anchor produces clean, single-reason
+verdicts; the `npm test` fixture noise is gone. `fix-validator` is 4/4 across both rounds, catching
+the env-gate counterfeit (twice, with empirical proof) and the post-confirmation tamper (twice,
+once under a genuinely-correct fix).
 
 ## Not yet run
 
