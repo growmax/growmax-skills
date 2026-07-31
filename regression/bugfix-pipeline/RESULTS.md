@@ -43,3 +43,5 @@ once under a genuinely-correct fix).
 |---|---|
 | C1-reproducible | needs a full /confirm-bug lap (scripted gates per script.md) |
 | C2-unreproducible | same |
+| C5-auto-label | needs a full /bugfix lap under zero-question discipline (script.md carries no answers); sandbox needs `add_origin` — the AUTO route pushes a tag and a branch |
+| C6-ambiguity-trap | cheap: route + GATE A form only, stop and grade at the ask. Run it right after C3/C4 |

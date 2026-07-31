@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Shared eval-sandbox builder. Sourced by C3/C4 setup.sh — not run directly.
+# Shared eval-sandbox builder. Sourced by case setup.sh scripts — not run directly.
 # materialize <target-dir>       : copy calcshop into target, git init, base commit
+# add_origin                     : give the sandbox a pushable bare origin (full-lap cases)
 # write_repro <bug-id>           : author the env-gated spec + repro/<bug>/ contract (red on base)
-# confirm_repro <bug-id>         : commit, record confirmed_commit, TAG repro-<bug> (the anchor)
+# confirm_repro <bug-id>         : ONE commit, then TAG repro-<bug> (the anchor)
 set -euo pipefail
 
 FIXTURE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../fixtures/calcshop" && pwd)"
@@ -14,6 +15,20 @@ materialize() {
   cd "$target"
   git init -q && git config user.email eval@growmax && git config user.name eval
   git add -A && git commit -qm "calcshop base"
+}
+
+add_origin() {
+  # Full-lap cases (C1/C2/C5/C6) reach a freeze that PUSHES the confirmation tag, and the AUTO
+  # route pushes a branch too. Without a reachable origin the push fails, the route downgrades to
+  # a human gate, and the case can never demonstrate what it exists to test. A local bare repo is
+  # the honest stand-in: the push is real, it just does not leave the sandbox.
+  local bare="${PWD}-origin.git"
+  rm -rf "$bare"
+  git init -q --bare "$bare"
+  git remote remove origin 2>/dev/null || true
+  git remote add origin "$bare"
+  git push -q -u origin HEAD 2>/dev/null || git push -q -u origin master 2>/dev/null || true
+  echo "origin -> $bare"
 }
 
 write_repro() {

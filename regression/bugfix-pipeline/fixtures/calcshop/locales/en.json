@@ -1,0 +1,16 @@
+{
+  "orders": {
+    "confirmed": { "title": "Orders Confirmed" },
+    "pending": { "title": "Orders Pending" }
+  },
+  "payments": {
+    "collected": { "title": "Payments Collected" },
+    "pending": { "title": "Payments Collected" }
+  },
+  "summary": {
+    "revenue": { "title": "Revenue" }
+  },
+  "dashboard": {
+    "revenue": { "title": "Revenue" }
+  }
+}
