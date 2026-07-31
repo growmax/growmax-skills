@@ -83,7 +83,7 @@ Merge to main; fresh sessions pick it up (or `claude plugin update growmax-skill
 ## 02 · Two smoke tests on your machine — no database needed (~10 min)
 
 ```bash
-# the freeze hook: expect  pass=10 fail=0
+# the freeze hook: expect  pass=13 fail=0
 bash hooks/protect-repro.test.sh
 
 # watch the grader refuse a GREEN run because the frozen spec was edited:

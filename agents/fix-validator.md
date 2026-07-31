@@ -26,8 +26,13 @@ and run commands. Judge the artifact, not the story told about it.
 ## The five checks — ALL required for PASS
 
 **1. The contract exists.**
-`repro/BUG-<id>/meta.json` is present, parseable, and `confirmed_by_human === true`. A repro nobody
-confirmed is not a grader → FAIL.
+`repro/BUG-<id>/meta.json` is present, parseable, and the confirmation is real — either
+`confirmed_by_human === true` (human mode; `confirmed_mode` absent or `"human"`), **or**
+`confirmed_mode === "machine"` AND `machine_confirmation` is present with all four fields
+(`reporter`, `primary_failed_on`, `runner_exit`, `tag`) AND `git rev-parse repro-BUG-<id>^{}`
+succeeds. Machine mode with a missing tag or a missing/partial evidence object is NOT a
+confirmation → FAIL — machine mode has no legacy fallback. A repro nobody (and nothing) confirmed
+is not a grader → FAIL.
 
 **2. The grader is untouched — this outranks the test result.**
 Resolve the baseline in this order, because the baseline itself must sit outside the fixer's write
@@ -112,7 +117,7 @@ paragraph is the reason not to.
 VERDICT: PASS | FAIL
 
 EVIDENCE
-  contract      : confirmed_by_human=<...>, confirmed_commit=<...>
+  contract      : mode=<human|machine|legacy>, confirmed_by_human=<...>, machine_confirmation=<present+tag verified | n/a>, confirmed_commit=<...>
   grader diff   : <empty | what changed>
   runner        : <command> → exit <code>
   named test    : <test name> → <passing | skipped | absent | renamed>  (quote the output line)

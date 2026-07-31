@@ -7,14 +7,19 @@ T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 cd "$T"
 
-mkdir -p repro/BUG-C repro/BUG-U app/test
+mkdir -p repro/BUG-C repro/BUG-U repro/BUG-M app/test
 cat > repro/BUG-C/meta.json <<'EOF'
 { "bug_id": "BUG-C", "spec_path": "app/test/bug-c.repro.test.js", "confirmed_by_human": true }
 EOF
 cat > repro/BUG-U/meta.json <<'EOF'
 { "bug_id": "BUG-U", "spec_path": "app/test/bug-u.repro.test.js", "confirmed_by_human": false }
 EOF
-touch app/test/bug-c.repro.test.js app/test/bug-u.repro.test.js app/src.js
+cat > repro/BUG-M/meta.json <<'EOF'
+{ "bug_id": "BUG-M", "spec_path": "app/test/bug-m.repro.test.js", "confirmed_by_human": false,
+  "confirmed_mode": "machine",
+  "machine_confirmation": { "reporter": "tap", "primary_failed_on": "x", "runner_exit": 1, "tag": "repro-BUG-M" } }
+EOF
+touch app/test/bug-c.repro.test.js app/test/bug-u.repro.test.js app/test/bug-m.repro.test.js app/src.js
 
 pass=0; fail=0
 check() { # $1 desc, $2 expected exit, $3 payload
@@ -33,6 +38,9 @@ check "bash sed -i into CONFIRMED repro blocked"       2 '{"tool_input":{"comman
 check "bash redirect into CONFIRMED repro blocked"     2 '{"tool_input":{"command":"echo x > repro/BUG-C/repro.md"}}'
 check "bash READ of confirmed repro allowed"           0 '{"tool_input":{"command":"cat repro/BUG-C/meta.json"}}'
 check "bash write into UNCONFIRMED repro allowed"      0 '{"tool_input":{"command":"sed -i s/a/b/ repro/BUG-U/repro.md"}}'
+check "edit inside MACHINE-confirmed repro dir blocked" 2 '{"tool_input":{"file_path":"repro/BUG-M/meta.json"}}'
+check "edit MACHINE-confirmed spec blocked"             2 '{"tool_input":{"file_path":"app/test/bug-m.repro.test.js"}}'
+check "bash sed -i into MACHINE-confirmed repro blocked" 2 '{"tool_input":{"command":"sed -i s/x/y/ repro/BUG-M/repro.md"}}'
 
 # Self-gating: a tree with no repro/ dir must always allow.
 cd "$(mktemp -d)"

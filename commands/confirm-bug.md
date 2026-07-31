@@ -81,12 +81,21 @@ auth and helpers), **env-gated so normal runs and CI never execute it while it i
   "source_report": "<issue link / where the report came from>",
   "protected": true,
   "confirmed_by_human": false,
+  "confirmed_mode": "human",
+  "machine_confirmation": null,
   "confirmed_commit": null
 }
 ```
 
 (`confirmed_commit` is a **legacy** anchor for repros confirmed before tags existed — it stays
 `null` on new repros; the pushed tag `repro-BUG-<id>` is the authoritative baseline.)
+
+(`confirmed_mode: "machine"` + a filled `machine_confirmation` object — `{reporter,
+primary_failed_on, runner_exit, tag}` — are written ONLY by `/bugfix`'s AUTO/CONFIRM routes at
+their mechanical GATE B (see `commands/bugfix.md`). Standalone `/confirm-bug` always freezes
+human-mode. `confirmed_by_human` stays honest either way: it is never `true` for a machine
+freeze, and machine mode is only a confirmation while the pushed tag `repro-BUG-<id>` resolves —
+no tag, no confirmation, no legacy fallback.)
 
 "Fixed" later means exactly: `runner` exits 0, `expected_failure.test` **and every `matrix` case**
 pass, and `git diff repro-BUG-<id> -- repro/BUG-<id>/ <spec_path>` is EMPTY.
@@ -228,8 +237,8 @@ blocker; the repro stays unconfirmed).
   not insist.
 
 On confirmation, freeze in TWO moves — ONE commit, then the tag that can't be quietly undone:
-1. Flip `confirmed_by_human: true` (leave `confirmed_commit` **null** — see below), commit the
-   repro folder + spec as a single commit.
+1. Flip `confirmed_by_human: true` and set `confirmed_mode: "human"` (leave `confirmed_commit`
+   **null** — see below), commit the repro folder + spec as a single commit.
 2. **Tag that commit and push the tag:** `git tag repro-BUG-<id> && git push origin repro-BUG-<id>`.
    The tag IS the confirmation record and the validator's authoritative baseline — a later session
    can edit `meta.json`, but cannot move a pushed tag without a force-push that GitHub tag

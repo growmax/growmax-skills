@@ -73,10 +73,11 @@ fix from a coincidence: a green run alone cannot tell you the repro was ever tes
 ## Workflow
 
 ### Phase 0 — Verify the contract (you)
-Read `meta.json`. `confirmed_by_human` must be `true` AND an anchor must exist — the tag
-`repro-BUG-<id>` (`git rev-parse repro-BUG-<id>` succeeds), or on a legacy repro
-`confirmed_commit` set. Neither → stop: the repro was never frozen, so "unchanged since
-confirmation" is unprovable. Then
+Read `meta.json`. The repro must be confirmed — `confirmed_by_human: true`, or
+`confirmed_mode: "machine"` with its complete `machine_confirmation` evidence object — AND an
+anchor must exist: the tag `repro-BUG-<id>` (`git rev-parse repro-BUG-<id>` succeeds), or on a
+legacy **human** repro `confirmed_commit` set. Machine mode requires the tag, always. Neither →
+stop: the repro was never frozen, so "unchanged since confirmation" is unprovable. Then
 run `meta.json.runner` yourself once and confirm it fails on the recorded assertion. Already green
 → report and stop (fixed elsewhere, or environment-dependent). Failing differently → report the
 delta and stop; the human decides whether that is drift or a second bug.

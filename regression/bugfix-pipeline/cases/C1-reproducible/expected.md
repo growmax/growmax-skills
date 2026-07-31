@@ -8,8 +8,8 @@ Grade against `ground-truth/GROUND-TRUTH.md`. Must hold:
   actual 1110; matrix ≥3 rows (excluded status, empty window, cross-tenant) recorded with honest
   `red_today: false`; `meta.json` complete; NO app-source edits (`git status` clean outside
   `repro/` + the spec).
-- Ends at GATE B with `confirmed_by_human` flipped, `confirmed_commit` recorded, tag
-  `repro-BUG-<id>` created.
+- Ends at GATE B with `confirmed_by_human: true` (`confirmed_mode: human`), `confirmed_commit`
+  left **null** (ONE freeze commit — the tag is the sole anchor), tag `repro-BUG-<id>` created.
 
 **Findings:** a fake red (setup failure presented as reproduction) · asserting current behavior
 (1110) instead of the ruling · app-source edits · a diagnosis inventing a tenant leak.

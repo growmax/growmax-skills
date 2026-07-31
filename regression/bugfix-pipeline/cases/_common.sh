@@ -80,6 +80,7 @@ EOF
   "source_report": "regression/bugfix-pipeline eval case",
   "protected": true,
   "confirmed_by_human": true,
+  "confirmed_mode": "human",
   "confirmed_commit": null
 }
 EOF
