@@ -153,6 +153,10 @@ C report; the validator stays purely artifact-based.
 - **PASS** → Gate C.
 
 ### GATE C — Human review (block; your last interrupt)
+
+> *Route overrides under `/bugfix`: see the enumerated table O1–O7 in
+> [`commands/bugfix.md`](bugfix.md) — on AUTO/CONFIRM this gate becomes an evidence-bundle PR that
+> is never auto-merged. This file stays the source of truth for the gate itself.*
 Present, in this order: the validator's `VERDICT` + `EVIDENCE` **verbatim**, the **mutation-check
 result** (reverted → red, restored → green), the root cause, the blast radius, and the strategy that
 was implemented. Then ask via `AskUserQuestion`: **ship it** (commit) · **needs changes** (loop with
@@ -170,8 +174,10 @@ initiative.
    unchanged). Reference the BUG id, and record the mutation-check result in the commit message —
    it is the durable evidence that this repro actually guards this fix.
 4. Append one row to the run ledger `.claude/bugfix-ledger.md` (same file `/confirm-bug` writes;
-   create with a header on first use): `date · BUG id · tier · fix loops · mutation result ·
-   verdict · human decision · agent tokens (approx) · promoted?`. After ~20 rows the **false-fixed rate** (validator said
+   create with a header on first use): `date · BUG id · tier · route · fix loops · mutation result ·
+   verdict · human decision (ship|changes|hold|PR-<n>) · agent tokens (approx) · promoted?`.
+   Standalone runs write `route=manual`; `/bugfix`'s AUTO/CONFIRM routes write the route, `PR-<n>`
+   as the decision, and `promoted? = on-merge` (the env-gate removal ships inside the PR diff). After ~20 rows the **false-fixed rate** (validator said
    PASS, bug came back) is the pipeline's real assurance number — >5% means tighten the validator,
    not the workers.
 5. **Report honestly:** what changed, what the validator verified, what the mutation check proved,

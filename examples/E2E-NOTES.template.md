@@ -45,3 +45,27 @@ and commit it. Delete the rows that don't apply.
 
 ## Known-bad baseline
 - `<any dead/non-compiling sibling specs; whether a broad test run is a clean signal; CI gating>`.
+
+## TIER FLOORS — /confirm-bug Phase 1.5 (glob → tier; a floor can only raise, never lower)
+
+Matched against the **predicted fix paths** (what the change-set would edit), never the symptom's
+URL or the directory a broken screen lives in. Omit this section to use the built-in default
+(`pricing|billing|payment|invoice|tax|currency|auth|rbac|tenant|migration|schema` → RED).
+
+| Glob (predicted fix paths) | Floor |
+|---|---|
+| `<apps/api/src/billing/**>` | RED |
+| `<apps/api/src/auth/**>` | RED |
+| `<locales/**, **/i18n/**>` | the locale/copy-only exemption applies — floor caps at YELLOW |
+
+## ROUTING — /bugfix route-table settings for this repo
+
+Routing is live by default. Everything here may only ever make routing **stricter** — the
+"can only add gates" law applies to configuration too.
+
+- `route_mode: <live | shadow | gated-only>` — `shadow` computes and logs the route but runs GATED;
+  `gated-only` skips routing entirely and always uses the three human gates.
+- `auto_confidence_min: <0.85>` — may only be RAISED above the shipped default.
+- `copy_resource_globs: <locales/**, packages/i18n/**>` — what counts as a copy/locale-only fix
+  path for the AUTO route.
+- `pr_base_branch: <main>` — the base for the `bugfix/BUG-<id>-auto` PR. AUTO never merges it.

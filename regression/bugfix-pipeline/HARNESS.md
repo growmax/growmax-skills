@@ -9,9 +9,12 @@ Node ≥ 20 and git ≥ 2.13.
 counterfeited — and grader integrity gates everything else. C1/C2 test the workers and cost full
 pipeline runs.
 
-**EVAL MODE:** each case's `script.md` supplies the gate answers a human would give. That is
-legitimate only here — the evals test the agents and checks, not the human. In production the
-gates are always answered by a person.
+**EVAL MODE:** each case's `script.md` supplies the answers a human would give **at whichever gates
+the route actually asks**. That is legitimate only here — the evals test the agents and checks, not
+the human. In production those answers come from a person (GATED/CONFIRM routes) or the gate is
+answered by the mechanical confirmation plus the PR reviewer (AUTO route — see
+`commands/bugfix.md`). **Mechanical gates run for real even in evals:** a scripted answer never
+stands in for a grader, and C5 fails outright if any grader is skipped "because AUTO".
 
 ## Cases
 

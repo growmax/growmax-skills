@@ -184,6 +184,9 @@ the *floor*, never the diagnostician's proposal (a proposed RED stays RED). Reco
 `meta.json.risk_tier` and say so when you raised it.
 
 ### GATE A — Diagnosis · ruling · strategy (block; ONE interrupt)
+
+> *Route overrides under `/bugfix`: see the enumerated table O1–O7 in
+> [`commands/bugfix.md`](bugfix.md). This file stays the source of truth for the gate itself.*
 Present the diagnosis and the ranked causes as text. Then issue **exactly one `AskUserQuestion`
 call** carrying up to three questions:
 
@@ -260,6 +263,9 @@ exact runner, interrogates the failure, and returns a **REPRODUCTION SUMMARY**: 
 assertion, expected vs actual, the runner command. It never touches app source.
 
 ### GATE B — Confirm the red (block; ends the command)
+
+> *Route overrides under `/bugfix`: see the enumerated table O1–O7 in
+> [`commands/bugfix.md`](bugfix.md). This file stays the source of truth for the gate itself.*
 Print the runner command, the primary's expected-vs-actual, and the matrix rows with their
 `red_today` state. Then ask via `AskUserQuestion`: **the red is correct** (freeze it) · **the red is
 wrong / not my bug** (back to Phase 2 with their correction) · **couldn't run it** (report the
@@ -286,8 +292,11 @@ signal (this exact defect was caught by the adversarial evals in `regression/bug
 `confirmed_commit` exists for legacy repros confirmed before tags; the tag supersedes it.
 
 Append one row to the run ledger `.claude/bugfix-ledger.md` (create with a header row on first
-use): `date · BUG id · tier · red-genuine-first-try? · repro attempts · matrix size ·
-agent tokens (approx) · confirmed?`. Token cost is measured, not estimated — it is how the team
+use): `date · BUG id · tier · route · triage class · confidence · overridden? ·
+red-genuine-first-try? · repro attempts · matrix size · agent tokens (approx) · confirmed (mode)?`.
+Standalone runs write `route=manual`, class and confidence `—`, `overridden?=no`, and
+`confirmed (mode)? = yes(human)`; `/bugfix` writes the computed route (or
+`shadow:<computed> (ran GATED)`) and `yes(machine)` when GATE B was mechanical. Token cost is measured, not estimated — it is how the team
 decides where the pipeline earns its spend. Then stop. Report: BUG id, runner
 command, the frozen primary assertion, the matrix size, `risk_tier`, `fix_strategy`, and the handoff
 line — *"fix in a fresh session; the repro is the grader."* If the human says the red is wrong → back
@@ -299,7 +308,10 @@ to Phase 2 with their correction (still unconfirmed, so it may be edited).
   the fix, prove the repro goes red again, restore) → independent validation → your ship gate →
   promotion. The fix session may NOT touch `repro/**`, the spec, or the runner.
 - **Interrupt budget across both commands: 3** — Gate A (ruling + strategy), Gate B (confirm red),
-  and the ship gate in `/fix-bug`. Everything else is mechanical and costs you nothing.
+  and the ship gate in `/fix-bug` — **when run standalone.** Everything else is mechanical and
+  costs you nothing. Under [`/bugfix`](bugfix.md), a deterministic route table may answer Gates A
+  and B mechanically and replace the ship gate with a PR: 0 interrupts (AUTO) or 1 (CONFIRM).
+  Standalone runs always ask.
 
 ## Model selection
 | Phase · agent | Recommended | Why | Don't go below |
