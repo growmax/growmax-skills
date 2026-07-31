@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # protect-repro.sh — PreToolUse hook: freeze CONFIRMED bug reproductions.
 #
-# A confirmed repro (repro/BUG-<id>/ with "confirmed_by_human": true) is the GRADER
+# A confirmed repro (repro/BUG-<id>/ whose meta.json says "confirmed_by_human": true OR
+# "confirmed_mode": "machine" — the /bugfix AUTO/CONFIRM mechanical freeze) is the GRADER
 # for a later fix session. Editing it lets a fix quietly re-aim the thing that judges
 # it, so this hook blocks Write/Edit/MultiEdit on those paths — and takes a best-effort
 # swing at Bash write patterns. It is FRICTION, not the enforcement: the enforcement is
@@ -30,10 +31,11 @@ fi
 [ -z "$root" ] && exit 0
 
 confirmed_bug_dirs() {
-  # Print every repro/BUG-*/ dir whose meta.json says confirmed_by_human: true.
+  # Print every repro/BUG-*/ dir whose meta.json says confirmed_by_human: true OR
+  # confirmed_mode: "machine" (machine-confirmed repros are frozen graders too).
   for meta in "$root"/repro/*/meta.json; do
     [ -f "$meta" ] || continue
-    if grep -qE '"confirmed_by_human"[[:space:]]*:[[:space:]]*true' "$meta"; then
+    if grep -qE '"confirmed_by_human"[[:space:]]*:[[:space:]]*true|"confirmed_mode"[[:space:]]*:[[:space:]]*"machine"' "$meta"; then
       dirname "$meta"
     fi
   done
@@ -74,7 +76,7 @@ if [ -n "$command_str" ]; then
     if printf '%s' "$cmd" | grep -qE '(sed[[:space:]]+-i|>[[:space:]]*[^&|;]*repro/|tee[[:space:]]|mv[[:space:]]|rm[[:space:]]|cp[[:space:]].*[[:space:]]repro/)'; then
       hit="$(printf '%s' "$cmd" | grep -oE 'repro/BUG-[A-Za-z0-9_-]+' | head -1)"
       bugdir="$root/${hit}"
-      if [ -f "$bugdir/meta.json" ] && grep -qE '"confirmed_by_human"[[:space:]]*:[[:space:]]*true' "$bugdir/meta.json"; then
+      if [ -f "$bugdir/meta.json" ] && grep -qE '"confirmed_by_human"[[:space:]]*:[[:space:]]*true|"confirmed_mode"[[:space:]]*:[[:space:]]*"machine"' "$bugdir/meta.json"; then
         block "bash command writes into confirmed ${hit} (pattern match)"
       fi
     fi

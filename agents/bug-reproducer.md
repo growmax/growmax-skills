@@ -143,8 +143,9 @@ machine-parseable reporter: jest → `--json`; vitest → `--reporter=json`; pla
 3. **`repro/BUG-<id>/meta.json`** — the full contract from the `/confirm-bug` schema, with
    `expected_failure` filled from the REAL observed values, `matrix` filled with every row and its
    honest `red_today`, `risk_tier` and `fix_strategy` carried through from Gate A,
-   `confirmed_by_human: false`, `confirmed_commit: null`, and `runner` = the exact one-line command
-   (including `REPRO_BUG=BUG-<id>`) that runs ONLY this repro.
+   `confirmed_by_human: false`, `confirmed_mode: "human"` (the authored default — the freeze, not
+   you, decides the final mode), `machine_confirmation: null`, `confirmed_commit: null`, and
+   `runner` = the exact one-line command (including `REPRO_BUG=BUG-<id>`) that runs ONLY this repro.
 
 Keep run logs, traces, screenshots and report dirs OUT of the commit — the spec + the folder are
 the only durable outputs.
@@ -166,5 +167,7 @@ the only durable outputs.
 - **Attempts** — how many runs, and what each setup correction was
 - **Root-cause hypothesis** — one paragraph, no fix
 - **Side-findings** — separate candidate bugs, or "none"
-- Close with: *"Human gate: run the command above, confirm the red is the reported failure, then
-  flip `confirmed_by_human` and record `confirmed_commit`. Fix in a FRESH session."*
+- Close with: *"Hand back to the orchestrator — GATE B confirms this red (a human at standalone
+  `/confirm-bug`; the route's mechanical confirmation under `/bugfix`), then ONE freeze commit +
+  tag `repro-BUG-<id>` pushed. `confirmed_commit` stays null. Fix happens in a FRESH context
+  against the frozen repro."*

@@ -29,8 +29,8 @@ should be supplied: the point is a clean-context judgment of the artifact.
 ## The five checks it applies
 | # | Check | FAIL when |
 |---|---|---|
-| 1 | Contract | `confirmed_by_human` is not `true` |
-| 2 | **Grader untouched** | `git diff <confirmed_commit> -- repro/BUG-<id>/ <spec_path>` is non-empty, or any test-runner config / runner script changed since confirmation |
+| 1 | Contract | neither human-confirmed (`confirmed_by_human: true`) nor machine-confirmed (`confirmed_mode: "machine"` + complete `machine_confirmation` + resolvable `repro-BUG-<id>` tag) |
+| 2 | **Grader untouched** | `git diff repro-BUG-<id> -- repro/BUG-<id>/ <spec_path>` is non-empty (the pushed confirmation tag is the baseline; `confirmed_commit` only on a legacy repro that has no tag), or any test-runner config / runner script changed since confirmation |
 | 3 | Runner | `meta.json.runner` exits non-zero |
 | 4 | **Named test ran** | the test in `expected_failure.test` is skipped, renamed, filtered out, or absent — a green suite without it is a counterfeit pass |
 | 5 | Repo checks | typecheck or the narrowest relevant suite is red |

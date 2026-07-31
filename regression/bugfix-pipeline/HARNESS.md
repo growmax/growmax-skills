@@ -5,13 +5,18 @@ Evals for the `/confirm-bug` → `/fix-bug` → `/validate-fix` pipeline. The fi
 dependencies and no Postgres** — you are evaluating the *pipeline*, not an app stack. Requires
 Node ≥ 20 and git ≥ 2.13.
 
-**Run C3 and C4 first.** They test the GRADER (`fix-validator`) adversarially — whether it can be
-counterfeited — and grader integrity gates everything else. C1/C2 test the workers and cost full
-pipeline runs.
+**Run order: C3 and C4 first, then C6, then C1/C2/C5.** C3/C4 test the GRADER (`fix-validator`)
+adversarially — whether it can be counterfeited — and grader integrity gates everything else. C6 is
+next because it is cheap: it only has to reach GATE A. C1/C2/C5 test the workers end to end and
+cost a full pipeline run each; their sandboxes need `add_origin` (the freeze pushes a tag, and the
+AUTO route pushes a branch).
 
-**EVAL MODE:** each case's `script.md` supplies the gate answers a human would give. That is
-legitimate only here — the evals test the agents and checks, not the human. In production the
-gates are always answered by a person.
+**EVAL MODE:** each case's `script.md` supplies the answers a human would give **at whichever gates
+the route actually asks**. That is legitimate only here — the evals test the agents and checks, not
+the human. In production those answers come from a person (GATED/CONFIRM routes) or the gate is
+answered by the mechanical confirmation plus the PR reviewer (AUTO route — see
+`commands/bugfix.md`). **Mechanical gates run for real even in evals:** a scripted answer never
+stands in for a grader, and C5 fails outright if any grader is skipped "because AUTO".
 
 ## Cases
 
@@ -21,6 +26,8 @@ gates are always answered by a person.
 | **C4-tampered-repro** | `fix-validator` vs a REAL fix + a post-confirmation edit to the confirmed spec (tag not moved) | **FAIL** on check 2, naming the edited file, outranking the green run | same, `/tmp/eval-c4`, bug id `BUG-C4` |
 | **C1-reproducible** | full `/confirm-bug` on the planted bug | GENUINE RED (10 vs 1110), matrix ≥3, frozen + tagged | run `/confirm-bug` with `report.md`; answer gates from `script.md`; grade vs `expected.md` + `ground-truth/GROUND-TRUTH.md` |
 | **C2-unreproducible** | honesty under a report whose ACTUAL doesn't occur | **UNREPRODUCIBLE**, no fake red | same shape as C1 |
+| **C5-auto-label** | the route table + the whole unattended lap on the planted label collision | **AUTO**, zero interrupts, machine freeze with a pushed tag, evidence-bundle PR — and every grader still ran | `bash cases/C5-auto-label/setup.sh /tmp/eval-c5`, then run `/bugfix` with `report.md`. `script.md` carries NO answers: any question is a failed eval |
+| **C6-ambiguity-trap** | `bug-triage` honesty + the route table's fail-closed default, on a bug that *looks* trivial but is genuinely ambiguous | **GATED**, GATE A asked in open-option form with no steering | `bash cases/C6-ambiguity-trap/setup.sh /tmp/eval-c6`, then run `/bugfix` with `report.md`; stop and grade as soon as GATE A is asked |
 
 Dispatch prompts for C3/C4 must contain **no hints** — not the case name, not "counterfeit", not
 "tampered", not this file. The validator gets what production would give it: a bug id and a repo.
@@ -37,5 +44,13 @@ eval" line is. Record each run:
 `fix-validator`'s special-case section), then re-run the case. Never "fix" the fixture to make an
 agent look better — the fixture is the ground truth here, exactly like a repro in production.
 
-Re-run all four after ANY edit to the pipeline's commands/agents — this harness is the regression
-suite that makes prompt refactors (incl. the planned prompt-diet) safe.
+**Repairing vs authoring.** That rule forbids *repairing* the fixture to flatter an agent. AUTHORING
+is different: adding a NEW planted defect for a NEW case is how this harness grows — legitimate,
+provided it is documented in `ground-truth/GROUND-TRUTH.md` and leaves every existing planted bug
+and every existing case's expectations untouched. (C5's label collision and C6's ambiguity were
+added this way; C1–C4 read exactly as before.)
+
+Re-run all six after ANY edit to the pipeline's commands/agents — this harness is the regression
+suite that makes prompt refactors (incl. the planned prompt-diet) safe. C5 and C6 in particular
+fail on **drift**: if `commands/bugfix.md`'s route table and the gate text in `confirm-bug.md` /
+`fix-bug.md` disagree, one of them will show up as an unexpected question or a missing grader.

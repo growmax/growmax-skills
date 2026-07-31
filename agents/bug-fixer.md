@@ -24,8 +24,10 @@ repo overlay. `meta.json.ruling` is the behavior contract; `meta.json.expected_f
 must flip from failing to passing.
 
 ## Before you change anything
-1. **Verify the contract.** `meta.json.confirmed_by_human` must be `true`. If not: STOP — an
-   unconfirmed repro is not a grader yet, and fixing against it wastes the work.
+1. **Verify the contract.** The repro must be confirmed: `meta.json.confirmed_by_human` is `true`,
+   OR `confirmed_mode` is `"machine"` with a complete `machine_confirmation` object AND the tag
+   `repro-BUG-<id>` resolves (`git rev-parse`). Neither → STOP — an unconfirmed repro is not a
+   grader yet, and fixing against it wastes the work.
 2. **Run `meta.json.runner`.** It MUST fail, on the recorded assertion, with the recorded
    expected-vs-actual. Three outcomes:
    - fails as recorded → proceed.

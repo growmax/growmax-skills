@@ -23,6 +23,34 @@ wasted. Rank hypotheses with the evidence that discriminates them instead of pic
 The verbatim bug report (URLs, tenant, logins the human shared, exact values seen), the BUG id, and
 any repo-overlay facts (surfaces, runners, ports, logins, JWT shape, DB-safety).
 
+## DEPTH (input; default `full`)
+
+**`DEPTH: full`** — the default, and the only depth standalone `/confirm-bug` uses. Everything
+below, unchanged.
+
+**`DEPTH: confirm`** — dispatched by `/bugfix`'s AUTO/CONFIRM routes together with a
+**`VERIFIED FACTS — do not re-derive`** block: evidence the orchestrator has already
+*deterministically* verified (the precedent exists at its cited `file:line`; the predicted fix
+paths exist; the call sites). **Treat those as established.** Do not re-census surfaces, do not
+re-grep call sites, do not re-derive what the block already states.
+
+Your narrowed job at confirm depth:
+1. Open the predicted fix paths and **CONFIRM or DENY** the mechanism and the class.
+2. Confirm the cited precedent genuinely expresses the intended behavior (not a coincidence of
+   naming).
+3. Fill **RISK TIER**, **MATRIX DIMENSIONS**, and **REPRO HINTS**.
+
+Budget: **~20 tool calls.** If anything contradicts the verified facts — a second plausible cause,
+a sensitivity the triage missed, product ambiguity, a precedent that does not actually settle it —
+**say so in your first line.** The orchestrator downgrades the route on that signal, which is a
+**success, not a failure**: catching it here is exactly why this step still runs.
+
+Return sections at confirm depth: **DIVERGENCE TABLE** → n/a unless you found a contradiction ·
+**RULING QUESTION** → replaced by `PRECEDENT CHECK: CONFIRMS | DENIES <one line>` (the orchestrator
+owns the question form) · **FIX STRATEGY OPTIONS** → n/a (derived from the precedent) ·
+**FACTUAL DISCRIMINATORS** → if any genuinely exist, that is itself a downgrade signal: list them
+and say so. Everything else stays required.
+
 ## Read-only, always
 - **Code**: read freely.
 - **Live system**: ONLY with access the human provided in this session, and ONLY reads — GraphQL
@@ -81,6 +109,10 @@ diagnosing is a **P0 side-finding** — surface it immediately and loudly.
   your report biases the repro toward asserting the fix instead of the ruling.
 - Rule on correct behavior, or present one behavior as obviously right when the repo doesn't say so.
 - Write, edit, or run anything that mutates state (code, DB, or app).
+- **Construct or execute a live repro harness** — no writing spec scaffolds, no "let me build a
+  tiny script to prove it", no running the suite to watch it fail. Whether and how the bug is
+  runnable belongs in REPRO HINTS (name the runner and the suite); building red things is the
+  reproducer's job, in its own context. Applies at BOTH depths.
 - Assert a cause you only inferred from naming — cite the computation, or label it a hypothesis.
 - Trust the report's numbers as ground truth without saying so; if you couldn't verify a value
   live, mark it "as reported".
@@ -115,7 +147,9 @@ diagnosing is a **P0 side-finding** — surface it immediately and loudly.
   - **RED** — touches money/pricing/tax/currency, auth/RBAC/tenant scoping, schema/migration, or a
     shared unit with **≥3 callers** (count them and say the number).
   - **YELLOW** — business logic, a query, a document flow, contained to one module.
-  - **GREEN** — copy/styling/empty state/formatting-only, one call site, no money.
+  - **GREEN** — copy/label/styling/empty-state/formatting-only **change-set**, no money. A
+    copy/label fix qualifies **regardless of call-site count when every site reads the same copy
+    resource** — one string edited in one place is one change, however many screens render it.
 
   Be honest upward: when in doubt between two tiers, name the higher one and say why you hesitated.
   Under-tiering is the expensive direction — it skips the matrix and softens the confirm gate.
@@ -145,4 +179,6 @@ diagnosing is a **P0 side-finding** — surface it immediately and loudly.
   which two endpoints to call with which identical inputs), and the smallest hand-computable
   numbers that would expose it. Hints only — you do not write the repro.
 - **LIVE CALLS MADE** — every read-only call and its result, or "none".
-- **SIDE-FINDINGS** — separate candidate bugs, or "none".
+- **SIDE-FINDINGS** — separate candidate bugs, or "none". These are **informational only**: they
+  never become questions at GATE A. Give each a proposed `BUG-<YYYYMMDD>-<slug>` id and a one-line
+  report so the orchestrator can file it without asking the human anything.
