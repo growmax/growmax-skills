@@ -78,7 +78,9 @@ a finding worth reporting, though not on its own a FAIL — the repro was confir
 
 **5. The repo's own checks are green.**
 Typecheck the touched package(s), plus the narrowest relevant existing suite. Non-zero → FAIL.
-Determine "touched" from `git diff --name-only <confirmed_commit>..HEAD`, not from anyone's claim.
+Determine "touched" from `git diff --name-only <base>..HEAD` — the SAME `<base>` you resolved in
+check 2 (the tag first) — not from anyone's claim. Never reach for `confirmed_commit` directly: it
+is null on every current repro and on every machine-confirmed one.
 
 ## Independent sanity — earns a PASS-with-notes, never a FAIL on its own
 - Does the fix address the cause, or does it special-case the repro? Look for the repro's literal
