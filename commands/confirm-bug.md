@@ -121,7 +121,7 @@ ceremony this bug gets. **Tier the rigor, never delete the gate.**
 |---|---|---|---|---|
 | **RED** | money/pricing/tax/currency · auth/RBAC/tenant scoping · schema/migration · a shared unit with ≥3 callers | required | required (full checklist) | human runs the runner |
 | **YELLOW** | business logic, queries, document flows, single module | asked | required (DIFFERS rows + a cross-tenant case) | evidence review |
-| **GREEN** | copy/styling/empty state/formatting-only, single call site, no money | skipped | optional | evidence review |
+| **GREEN** | copy/label/styling/empty-state/formatting-only **change-set**, no money — qualifies regardless of call-site count when every site reads the same copy resource | skipped | optional | evidence review |
 
 ## Hard rules
 - **Diagnosis is read-only.** Code reading always; live checks ONLY with human-provided access and
@@ -155,7 +155,10 @@ Assign the BUG id. Restate the report in one line: *expected vs actual, where se
 likely surface(s). If the report lacks either an expected or an actual, ask now.
 
 ### Phase 1 — Diagnose (subagent: `bug-diagnostician`)
-Dispatch with the verbatim report + overlay facts. It locates every surface showing the symptom,
+Dispatch with the verbatim report + overlay facts — plus, when the caller supplies them, a `DEPTH`
+value and a `VERIFIED FACTS — do not re-derive` block (`/bugfix`'s routes do; **standalone runs
+pass neither, and the agent defaults to `DEPTH: full`** — standalone `/confirm-bug` behavior is
+unchanged). It locates every surface showing the symptom,
 the exact code path behind each (file:line), builds the divergence table when two surfaces
 disagree, ranks root-cause hypotheses with the evidence that discriminates them, and separates
 CODE BUG from PRODUCT AMBIGUITY from DATA ISSUE. Read-only. Writes nothing.
@@ -163,9 +166,21 @@ CODE BUG from PRODUCT AMBIGUITY from DATA ISSUE. Read-only. Writes nothing.
 ### Phase 1.5 — Tier floor (you; deterministic, no interrupt)
 The diagnostician *proposes* a tier; you enforce a floor, because under-tiering is prompt-level and
 cheap to backstop. If the repo overlay has a `TIER FLOORS` section (glob → tier), apply it;
-otherwise the default: any cited path matching
+otherwise the default: any **predicted fix path** matching
 `pricing|billing|payment|invoice|tax|currency|auth|rbac|tenant|migration|schema` → floor **RED**.
-`final_tier = max(proposed, floor)` — a floor can only raise, never lower. Record `final_tier` as
+
+**The floor evaluates what the CHANGE-SET would touch, not where the symptom appeared.** A path in
+a stack trace, a URL, or the directory a broken screen happens to live in is not a fix path —
+`payments/detail.tsx` rendering a wrong label does not floor a locale-file edit at RED. Match on
+the files the fix would edit.
+
+**Deterministic exemption:** when every predicted fix path is a locale/copy resource (locale
+bundle, message catalog, a pure string literal) AND none of the flagged semantics appear in the
+changed *content* itself (no currency symbol, no amount placeholder, no auth/tenant identifier),
+the floor caps at **YELLOW**.
+
+`final_tier = max(proposed, floor)` — a floor can only raise, never lower, and the exemption bounds
+the *floor*, never the diagnostician's proposal (a proposed RED stays RED). Record `final_tier` as
 `meta.json.risk_tier` and say so when you raised it.
 
 ### GATE A — Diagnosis · ruling · strategy (block; ONE interrupt)
@@ -181,12 +196,32 @@ call** carrying up to three questions:
 3. **The factual discriminators** (when any exist) — anything answerable from the screenshot or
    screen already in hand. One of these can overturn the diagnosis, and it costs a glance.
 
+**Side-findings never generate gate questions.** Anything the diagnosis found beyond THIS bug is
+auto-filed as a new candidate `BUG-<YYYYMMDD>-<slug>` — mentioned in one line of the report text
+and the ledger, never asked about here. Widening this call to cover a second defect is how a
+one-question gate becomes a quiz.
+
 **Why they merge:** the diagnosis already contains everything needed to choose a strategy, so
 asking later would be a second interrupt for information already on the table. Merge gates by what
 they *ask*, not by where they sit in the sequence. Three questions in one call is one interrupt;
 three calls are three.
 
 Rules for the ruling question:
+- **Plain language, product-owner wording.** Every question and option is phrased in the product's
+  own words — labels, screens, amounts — never pipeline jargon. No "repro", "primary assertion",
+  "tier", "matrix", "fence", "divergence table" inside the question text; those belong in the
+  surrounding report. The test: *could a PM who has never seen this pipeline answer it from the
+  screenshot?* **If the human declines to answer, or says they don't understand, do not re-ask the
+  same compound question** — re-ask ONE question at a time, simpler, starting with the ruling.
+- **Precedent collapse (CODE BUG with a cited in-repo precedent).** When the classification is
+  CODE BUG and the diagnosis cites a precedent the code demonstrably contradicts — a sibling
+  implementation, a spec, a comment — the ruling question collapses to TWO options in
+  confirm-or-overrule form: **(1)** "Confirmed — *&lt;the precedent's behavior, stated as fact, with
+  its `file:line`&gt;*" · **(2)** "Overrule — that is not the right behavior (tell me what is)".
+  This does **not** breach the never-mark-Recommended rule below: the collapse states repo
+  **evidence as fact**, which the rules already allow ("evidence is not a nudge") — it does not
+  mark a preference between two open behaviors. The moment the classification is PRODUCT AMBIGUITY,
+  or the human overrules, the collapse is void: full 2–4 open options, no steering.
 - **2–4 options**, each a *concrete behavior*, not a vague direction. Label ≤5 words
   ("Invoiced revenue everywhere"); the description says what the repro would then assert and what
   becomes the bug.
@@ -270,7 +305,7 @@ to Phase 2 with their correction (still unconfirmed, so it may be edited).
 | Phase · agent | Recommended | Why | Don't go below |
 |---|---|---|---|
 | Orchestrator (this session) | **Sonnet** | Threads outputs, enforces gates. | Sonnet. |
-| 1 · `bug-diagnostician` | **Opus** | Root-cause ranking across resolvers/services/SQL gates everything downstream; a confident wrong cause wastes the whole loop. | Sonnet if cost-bound; never Haiku. |
+| 1 · `bug-diagnostician` | **Opus** at `DEPTH: full`; **Sonnet** at `DEPTH: confirm` (pass `model: sonnet` on the dispatch — it outranks the agent's frontmatter) | Root-cause ranking across resolvers/services/SQL gates everything downstream; a confident wrong cause wastes the whole loop. Confirm depth only verifies already-verified evidence against ~20 tool calls, so it does not need Opus. | Sonnet if cost-bound; never Haiku. |
 | 2 · `bug-reproducer` | **Sonnet** (Opus for money-path bugs) | Writing + the red-interrogation loop; iterates, so cost matters. | **Never Haiku** — it rubber-stamps setup failures as reproductions. |
 
 ## Notes
