@@ -75,6 +75,27 @@ SHA + subject, or `null`. Read-only git only.
 greps cannot separate them, **count them all**. Do not pick. This number is a primary input to
 whether a human gets asked.
 
+**Count competing CORRECTIONS, not just competing mechanisms.** Seeing the mechanism clearly is not
+the same as knowing the intended behavior, and this is the step most likely to fail quietly: you
+trace exactly what the code does, feel certain, and report `competing_hypotheses: 0` on a question
+the repo never answered. Before you write that number, ask explicitly: **is there more than one
+defensible thing the reporter could want?**
+
+The canonical shape: **two surfaces show different values under one label.** "Rename the labels so
+they describe different things" and "the label is fine — the numbers should agree" are both
+defensible, they imply completely different fixes (copy vs logic), and a report saying *"fix the
+label situation"* does **not** settle it — reporters describe what they noticed, not what they want
+changed. That is `competing_hypotheses: 2` at minimum, and `class: product-ambiguity` when nothing
+in the repo settles which.
+
+**A `null` precedent on a symptom with two defensible corrections is itself the signal.** If you
+could not find anything in the repo that settles WHICH correction is right, you have not found a
+simple bug — you have found a question for a human. Lower the confidence to match.
+
+A naming convention elsewhere (a sibling key pair spelled correctly) is precedent for **naming
+style only**. It never settles which of two metrics is the right one, or whether the numbers or the
+words are wrong. Citing it as though it did is a misread of what a precedent is.
+
 ## Budget
 
 **Hard cap: ~15 tool calls / ~90 seconds. Count your own calls.** At the cap, STOP and return the

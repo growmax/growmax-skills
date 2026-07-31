@@ -37,6 +37,39 @@ verdicts; the `npm test` fixture noise is gone. `fix-validator` is 4/4 across bo
 the env-gate counterfeit (twice, with empirical proof) and the post-confirmation tamper (twice,
 once under a genuinely-correct fix).
 
+## Round 3 — 2026-07-31 · bug-triage (haiku), blind dispatch (verbatim report + sandbox path, no hints)
+
+First run of the routing evals. C6 dispatched exactly as production would: the agent's own
+instructions plus the bug report, with no case name, no mention of ambiguity, and no ground truth.
+
+| case | verdict | right reason? | result |
+|---|---|---|---|
+| C6-ambiguity-trap (run 1) | route **GATED** | ❌ **no** — correct route, incidental reason. Triage returned `class: label-collision`, `confidence: 0.88`, `competing_hypotheses: 1` — none of the three ambiguity signals `expected.md` requires. GATED fired only because it flagged `money_path_touched: true`. It did avoid the pre-named trap (`precedent: null`, did not cite the `orders.*` pair as decisive) | **FAIL** |
+| C6-ambiguity-trap (run 2, after F2 fix) | route **GATED** | ✅ `class: product-ambiguity` · `confidence: 0.65` · `competing_hypotheses: 2` — all three signals, where one was required. Named both defensible corrections in its notes ("rename one label" vs "unify measurements") and still cited no precedent. GATED now fires on five independent conditions | **PASS** |
+
+**Finding F2 (against `bug-triage`):** step 7 counted competing **mechanisms**, not competing
+**corrections**. On run 1 the agent traced the mechanism perfectly — orders-vs-invoices, DRAFT
+counted, 1110 vs 10 — and that clarity is exactly what made it overconfident: it treated "rename
+the labels" as the obvious fix rather than one of two defensible readings, and never considered
+that the *numbers* might be what's wrong. Seeing the mechanism is not knowing the intended
+behavior. Note the `product-ambiguity` class existed in the signature table with **no procedure
+pointing at it** — a class nothing can route to is decoration.
+
+**F2 correction (applied same day, per the repair rule — the agent's prompt, never the fixture):**
+step 7 now requires counting competing *corrections*, names the canonical shape (two surfaces, one
+label, different values ⇒ `competing_hypotheses: 2` minimum), states that a reporter saying "fix
+the label" describes what they noticed rather than what they want changed, makes a `null` precedent
+on a two-correction symptom a signal in its own right, and spells out that a naming convention
+elsewhere is precedent for **naming style only**.
+
+**What the failure also demonstrated:** the fail-closed table held. An overconfident triage still
+landed GATED because a second, independent condition fired. Defense in depth worked exactly as
+designed — which is the argument for keeping the table's conditions redundant rather than minimal.
+
+**Not re-run:** C3/C4. The F2 fix touches `agents/bug-triage.md` only, an agent those cases never
+dispatch (they grade `fix-validator` directly), and the C3 sandbox was rebuilt and confirmed
+green-by-construction after the fixture additions. The hook self-test is green at `pass=13 fail=0`.
+
 ## Not yet run
 
 | case | status |
@@ -44,4 +77,3 @@ once under a genuinely-correct fix).
 | C1-reproducible | needs a full /confirm-bug lap (scripted gates per script.md) |
 | C2-unreproducible | same |
 | C5-auto-label | needs a full /bugfix lap under zero-question discipline (script.md carries no answers); sandbox needs `add_origin` — the AUTO route pushes a tag and a branch |
-| C6-ambiguity-trap | cheap: route + GATE A form only, stop and grade at the ask. Run it right after C3/C4 |
