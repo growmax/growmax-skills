@@ -10,6 +10,23 @@ stack. Delete the guidance comments once filled.
 - Platform type:            <!-- web / mobile / backend / library / monorepo / ... -->
 - Primary language(s):
 
+## Technical profile
+
+A COMPACT description of how this project works today — observed from
+the repo, never a universal template. The architect reads it first;
+where it and the repo disagree, the repo is truth (and the profile gets
+corrected). Grows over time from real implementation experience — add
+one rule per lesson, never a rulebook up front. ~15 lines max.
+
+- Project shape:              <!-- frontend-only / backend-only / full-stack -->
+- Frontend framework/stack:   <!-- e.g. React + TypeScript; skip if no FE -->
+- Frontend layer flow:        <!-- e.g. component → hook → service → api — as OBSERVED -->
+- Backend framework/stack:    <!-- e.g. Node/Express, Java/Spring; skip if no BE -->
+- Backend layer flow:         <!-- e.g. controller → service → repository — as OBSERVED -->
+- API style:                  <!-- e.g. REST, GraphQL, RPC -->
+- General rules:              <!-- 3-5 observed rules, e.g. "reuse existing patterns",
+                                   "no new libraries without asking" — add over time -->
+
 ## Knowledge base
 
 The project's business + tech knowledge base is NOT owned by gmax — it

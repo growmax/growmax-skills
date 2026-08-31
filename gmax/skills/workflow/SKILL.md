@@ -49,15 +49,20 @@ over-ceremony only costs a few minutes.
 ### Bug fix (standard/epic)
 
 1. Create the task folder `void/<slug>/` + STATE.md.
-2. Run the `codebase-analysis` skill for the bug's scope → write
-   `void/<slug>/analysis.md`. Durable findings (shared-code registry
+2. Business frame FIRST (context-architect, Mode A): Expected vs
+   Observed behavior, user/flow/feature position, business impact,
+   scope → `void/<slug>/business-context.md` per the business-context
+   skill. Blocking business questions are answered before recon starts.
+3. Run the `codebase-analysis` skill for the bug's scope → write
+   `void/<slug>/analysis.md`. The analysis hunts the divergence the
+   business frame named. Durable findings (shared-code registry
    entries) are written in the SAME pass directly into
    `standards/architecture-structure.md` as `Pending review`.
-3. HUMAN GATE: present the analysis in plain words — what the code does
-   today, where the bug lives, what shares that code — plus the pending
-   registry entries. The human confirms or corrects in place; flip
-   statuses to Confirmed.
-4. Architect designs the fix → `void/<slug>/architecture-design.md`
+4. HUMAN GATE: present the business context + analysis in plain words —
+   what SHOULD happen, what the code does today, where the bug lives,
+   what shares that code — plus the pending registry entries. The human
+   confirms or corrects in place; flip statuses to Confirmed.
+5. Architect designs the fix → `void/<slug>/architecture-design.md`
    (blast-radius mandatory) + durable tech facts direct into
    `standards/` and/or the project KB as Pending review → HUMAN GATE →
    design `Approved`, entries `Confirmed`.
@@ -66,11 +71,15 @@ over-ceremony only costs a few minutes.
 ### New feature / flow (standard/epic)
 
 1. Check the project knowledge base for existing confirmed business
-   context. For gaps, the context-architect interviews the human (+ code
-   recon where code exists).
-2. Business facts are written DIRECTLY into the project KB (placement
+   context. For gaps, the context-architect (Mode B) ORGANIZES the
+   developer's description into a structured flow — without adding
+   behavior — then asks the blocking business questions only.
+2. The interpreted flow is presented back to the developer and
+   CONFIRMED before anything is finalized (skip the round only for
+   trivial, unambiguous tasks). Then: `void/<slug>/business-context.md`
+   + business facts written DIRECTLY into the project KB (placement
    per the context-writing skill), each marked `Status: Pending review`
-   — one write, no draft copy.
+   — one write, no draft copy; the artifact links, never duplicates.
 3. HUMAN BUSINESS REVIEW over those exact files: "does this represent
    what the business should do?" Corrections in place → flip to
    `Confirmed`.

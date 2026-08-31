@@ -19,6 +19,9 @@ void/
     STATE.md                  AGENT-ONLY resume file. Terse, ≤30 lines.
                               The ONLY file a new session reads to resume.
 
+    business-context.md       HUMAN-FACING gate doc (both paths): the
+                              task's business frame — user, flow, expected
+                              vs observed, rules, acceptance, scope
     analysis.md               HUMAN-FACING gate doc (bug path)
     architecture-design.md    HUMAN-FACING gate doc (both paths)
 ```
@@ -47,6 +50,7 @@ ONE later stage reads each, once.
 | File | Budget | Re-read by |
 |---|---|---|
 | STATE.md | ≤30 lines | every resume |
+| business-context.md | ≤50 lines, links to KB files — never duplicates them | human gate + architect + planner + reviewer |
 | analysis.md | ≤60 lines, cite path:line, no code dumps | human gate + architect, once |
 | architecture-design.md | ≤120 lines | human gate + planner, once |
 | void/plan/<slug>.md | one line per phase + files/depends/shared/done-when | builder reads ONLY its phase |

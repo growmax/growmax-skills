@@ -26,7 +26,10 @@ here, and is it more complex than it needs to be?
 
 Read `void/plan/<slug>.md` and the approved design FIRST — the plan is
 the review scope; code outside it is flagged, not silently accepted. The
-design's acceptance criteria and regression surface are your baseline.
+design's acceptance criteria and regression surface are your baseline,
+together with the confirmed `void/<slug>/business-context.md`: the
+implementation must deliver its Expected Behavior and business
+acceptance criteria, not merely satisfy the technical design.
 
 Then the diff (e.g. `git diff` of the task's commits). **Read full
 changed files, not just the diff** — duplication and layering cannot be
@@ -77,6 +80,10 @@ Check the changed files against `standards/architecture-structure.md`
   into logic layers; boundary mapping happens at the boundary.
 - The design's Decisions & Boundaries hold in the code. Deviations are
   either justified in the builder's report or findings.
+- **API contract alignment** — when the design carries an API contract:
+  the frontend's expectation (request sent, response consumed, errors
+  handled) matches the backend's implementation exactly. A drift between
+  the two is a finding even when both sides "work".
 - **Regression surface** — for every consumer the design's shared-code
   analysis named: read the call site, confirm the invariant holds. And
   check SIBLING call paths for the same class of bug the task fixed —
