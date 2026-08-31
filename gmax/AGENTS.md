@@ -34,12 +34,14 @@ to `Confirmed`; facts the developer STATES are Confirmed on write — the
 developer is the authority). One write per fact, no draft copies — that
 is the token discipline.
 
-**`standards/` (repo root, committed)** — the build instructions:
+**`standards/` (repo root, committed)** — the build rulebooks:
 `architecture-structure.md` (folder responsibilities, dependency
-direction, placement rules, shared-code registry) and
-`architecture-styling.md` (naming, styling system, forbidden patterns).
-Engineering conventions only — never business facts. The architect
-conforms to it, the builder follows it, the reviewer reviews against it.
+direction, placement rules, decision aids, shared-code registry) and
+`architecture-styling.md` (styling source of truth, hard rules, UI
+construction patterns, naming, forbidden patterns) — prescriptive rules
+for writing new code, not descriptions of existing code. Engineering
+conventions only — never business facts. The architect conforms to it,
+the builder follows it, the reviewer reviews against it.
 
 **`void/` (gitignored — NEVER commit any of it)** — session machinery:
 
@@ -84,6 +86,8 @@ Prompt → orchestrator classifies size (trivial / small / standard / epic)
        → small?   → plan-lite → human approval → builder
                   → one senior review → PASS → commit → done
        → BUG FIX (standard/epic):
+                  → business frame first: void/<slug>/business-context.md
+                    (user, flow, expected vs observed, impact, scope)
                   → codebase analysis (task-scoped: flow, shared code, callers)
                     → void/<slug>/analysis.md (+ durable findings direct into
                       the shared-code registry as Pending review)
@@ -94,9 +98,11 @@ Prompt → orchestrator classifies size (trivial / small / standard / epic)
                     → HUMAN GATE → Approved/Confirmed
                   → planner → plan → build waves → reviewer
        → NEW FEATURE / FLOW (standard/epic):
-                  → context-architect: interview (+ code recon where code exists)
-                    → facts written DIRECTLY into the project's knowledge
-                      base as Pending review (one write, no draft copy)
+                  → context-architect: organize the developer's intent,
+                    ask blocking questions, confirm the interpretation
+                    → void/<slug>/business-context.md + facts written
+                      DIRECTLY into the project's knowledge base as
+                      Pending review (one write, no draft copy)
                     → HUMAN BUSINESS REVIEW in place → Confirmed
                   → architect → void/<slug>/architecture-design.md
                     (+ durable tech facts as Pending review) → HUMAN GATE

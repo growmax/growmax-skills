@@ -27,10 +27,13 @@ the personas.
 - `workflow.config.md` — the one file you fill in: your project's
   typecheck/lint/test commands, conventions, and the pointer to your
   existing knowledge base.
-- `standards/` — the build instructions: `architecture-structure.md`
-  (placement rules, dependency direction, shared-code registry) and
-  `architecture-styling.md` (naming, styling system, forbidden patterns).
-  Engineering conventions only — **committed to git**, reviewed like code.
+- `standards/` — the build rulebooks: `architecture-structure.md`
+  (placement rules, dependency direction, decision aids, shared-code
+  registry) and `architecture-styling.md` (styling source of truth,
+  hard rules, UI construction patterns, forbidden patterns) —
+  prescriptive rules for writing new code, drafted FROM the repo at
+  setup. Engineering conventions only — **committed to git**, reviewed
+  like code.
 - `void/` — session machinery only: STATE resume files, gate docs, plans.
   **Local only, never committed.**
 - `harnesses/` — thin shims so the same personas run in Claude Code,

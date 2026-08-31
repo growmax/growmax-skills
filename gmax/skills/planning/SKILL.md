@@ -13,7 +13,12 @@ don't patch it inside the plan.
 
 1. `void/<task-slug>/architecture-design.md` — must be `Status:
    Approved`. Its acceptance criteria and regression surface are
-   inherited by your plan's verification, verbatim.
+   inherited by your plan's verification, verbatim — including the
+   business acceptance criteria the design carried in from
+   `void/<task-slug>/business-context.md`. Its Feature Map and
+   API contract (when present) are inherited verbatim too — if the
+   contract proves unimplementable or FE/BE-misaligned while planning,
+   send the design back with reasons; never patch it inside the plan.
 2. `standards/architecture-structure.md` — placement rules. Your file
    placement conforms to it; new patterns come only from the design's
    Decisions section.

@@ -75,19 +75,48 @@ normal task flow.
 
 ## Step 5 — Draft standards/ from the repo
 
-Recon the codebase, then draft as `Status: Pending review`:
+Goal: prescriptive rulebooks for writing NEW code — where files go,
+what imports what, how UI is built — not a description of what exists.
+Both drafts land as `Status: Pending review`.
 
-- `standards/architecture-structure.md` — infer folder responsibilities
-  from the real tree, dependency direction from imports, and seed the
-  shared-code registry with genuinely shared modules (2+ consumers).
-- `standards/architecture-styling.md` — detect the styling system
-  (theme/tokens files, eslint/prettier config, naming patterns) and
-  write the enforceable rules.
+**First check — does the project already have these docs?** Look in the
+knowledge base and the repo for existing binding convention docs (e.g.
+`context/architecture/`, `docs/conventions/`, an architecture section in
+the README). Where a doc already states binding structure or styling
+conventions, the matching standards/ file LINKS to it instead of
+re-drafting (the project's existing docs win); draft only what's
+missing.
 
-Every inferred rule cites `path:line` evidence. Tell the human exactly
-which two files to review; corrections in place; confirmation flips to
-`Status: Confirmed`. Thin projects get thin drafts — no speculative
-rules.
+**5a — Structure recon** (for `standards/architecture-structure.md`):
+1. Read the manifests and map the real folder tree (2 levels deep).
+2. Read the import chains of 2-3 representative features end to end —
+   this reveals the true layering and dependency direction.
+3. Grep consumer counts to find genuinely shared modules (2+ consumers)
+   — these seed the shared-code registry.
+Then synthesize: per-folder responsibilities (what belongs AND what does
+NOT, with real examples), the dependency direction with forbidden
+arrows stated, and numbered placement rules ("When adding X → Y"). Add
+a decision tree and a review checklist only where the evidence supports
+them.
+
+**5b — Styling recon** (for `standards/architecture-styling.md`):
+1. Locate the styling source of truth: theme/token files, style-system
+   config (tailwind, styled-components, CSS modules, StyleSheet, ...),
+   lint/format configs.
+2. READ 3-5 representative screens/components and observe how styles
+   are actually written — where values come from, how styles are
+   declared, layout conventions, naming. The construction patterns come
+   from this reading, not from config files alone.
+Then synthesize: the source-of-truth rule, numbered hard rules, the
+"how UI is built" patterns, naming, and the forbidden list. Where the
+code is inconsistent, document the DOMINANT observed pattern and list
+the conflicts as questions for the developer — developer-stated rules
+are Confirmed on write.
+
+Every inferred rule cites `path:line` evidence. Thin projects get thin
+drafts — no speculative rules, no borrowed rulebooks. Tell the human
+exactly which two files to review; corrections in place; confirmation
+flips to `Status: Confirmed`.
 
 ## Step 6 — Fill workflow.config.md
 
@@ -95,8 +124,18 @@ Detect and fill: project name/platform/language (from manifests), gate
 commands (`package.json` scripts → typecheck/lint/test/build; Makefile,
 pyproject, go.mod equivalents — empty when none exists; empty gates are
 skipped, never faked), commit style (from git log), test file location,
-never-touch paths (generated dirs, vendor/, migrations/). Present the
-filled file to the human for confirmation.
+never-touch paths (generated dirs, vendor/, migrations/).
+
+Also draft the **Technical profile** section from repo recon — observed,
+never templated: project shape (does it have an FE, a BE, both?),
+frameworks from manifests, the FE/BE layer flows inferred from real
+import chains in 2-3 representative features (e.g. component → hook →
+service → api; controller → service → repository), API style from the
+routing/client code, and 3-5 general rules ONLY where the repo already
+shows them consistently. Thin projects get a thin profile — leave a
+line empty rather than guess.
+
+Present the filled file to the human for confirmation.
 
 ## Step 7 — Report
 
