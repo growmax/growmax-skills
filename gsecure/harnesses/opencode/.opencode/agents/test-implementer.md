@@ -1,5 +1,5 @@
 ---
-description: Pass B: implement the scenarios the test-cause selected and run them. No authority to weaken an expectation.
+description: "Pass B: implement the scenarios the test-cause selected and run them. No authority to weaken an expectation."
 mode: subagent
 ---
 

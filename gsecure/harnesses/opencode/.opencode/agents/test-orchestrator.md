@@ -1,5 +1,5 @@
 ---
-description: Drive ONE batch of the unit-test build end to end: pre-flight, worktree-per-phase waves, the designer/adversary/implementer/triage loop, production-defect issue filing, merges, ledgers and commits. Owns the human gates.
+description: "Drive ONE batch of the unit-test build end to end: pre-flight, worktree-per-phase waves, the designer/adversary/implementer/triage loop, production-defect issue filing, merges, ledgers and commits. Owns the human gates."
 mode: primary
 ---
 

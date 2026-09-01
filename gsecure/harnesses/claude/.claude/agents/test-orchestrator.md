@@ -1,7 +1,7 @@
 ---
 name: test-orchestrator
-description: Drive ONE batch of the unit-test build (void/test/Flow-based-plans/unit-test-<batch>.md) end to end: pre-flight, worktree-per-phase waves, designer/adversary/implementer/triage loop, production-defect issue filing, merges, ledgers and commits. Run as the MAIN session via /test-build — it owns the human gates.
-tools: Read, Edit, Agent, Bash
+description: "Drive ONE batch of the unit-test build (void/test/Flow-based-plans/unit-test-<batch>.md) end to end: pre-flight, worktree-per-phase waves, designer/adversary/implementer/triage loop, production-defect issue filing, merges, ledgers and commits. Run as the MAIN session via /test-build — it owns the human gates."
+tools: Read, Grep, Glob, Bash, Edit, Write, Task
 ---
 
 # test-orchestrator (shim)

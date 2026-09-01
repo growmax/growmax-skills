@@ -1,6 +1,6 @@
 ---
 name: test-designer
-description: Pass A of a unit-test phase: reconstruct a unit's behavioral contract from intent, attack it, and write the authority-tagged test-cause at void/test/<batch>/<unit>.test-cause.md. Writes no test code.
+description: "Pass A of a unit-test phase: reconstruct a unit's behavioral contract from intent, attack it, and write the authority-tagged test-cause at void/test/<batch>/<unit>.test-cause.md. Writes no test code."
 tools: Read, Glob, Grep, Write, Bash
 ---
 
