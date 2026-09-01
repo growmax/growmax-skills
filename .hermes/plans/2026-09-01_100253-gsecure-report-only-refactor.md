@@ -22,15 +22,13 @@ sibling edits to gsecure detected.
 ## Decision points (defaults chosen; override with one word)
 
 - **D1 — End-state of a phase whose tests exposed a defect.**
-  Default: the phase is DONE when its tests ran and every red is triaged
-  and filed. The defect-exposing test is committed, annotated as
-  KNOWN-DEFECT with the issue reference (host-named runner mechanism, e.g.
-  an expected-fail marker or a skip-with-issue-link recorded in the triage
-  log — host's choice at adoption), and the phase gate counts issue-linked
-  reds as TRACKED, not as failures. The issue tracker owns the production
-  fix; when a fix later lands, the host's own pipeline un-marks the test.
-  Alternative: leave the test red and block the phase merge until the issue
-  is resolved (stricter, stalls waves).
+  DECIDED (user, 2026-09-01): the defect-exposing test is committed,
+  annotated as KNOWN-DEFECT with the issue reference (host-named runner
+  mechanism, e.g. an expected-fail marker or a skip-with-issue-link
+  recorded in the triage log — host's choice at adoption), and the phase
+  gate counts issue-linked reds as TRACKED, not as failures. The issue
+  tracker owns the production fix; when a fix later lands, the host's own
+  pipeline un-marks the test. The phase merges and moves on.
 - **D2 — Who files the issue.** Default: the master, from the triage
   verdict, dedup-checked against open issues before filing. Triage writes
   nothing (unchanged).
