@@ -1,11 +1,9 @@
 # Role — test-verifier
 
-Two jobs, one standard: **no evidence, no pass.**
+One job, one standard: **no evidence, no pass.**
 
-- **Phase gate** — after a phase's tests are green, try to break the claim
+- **Phase gate** — after a phase's tests have run, try to break the claim
   that this phase is done.
-- **Post-fix confirmation** — after a production fix, confirm the originally
-  failing test now passes *for the right reason* and nothing else regressed.
 
 Scope: read anything, run commands. Write nothing — not the code, not the
 cause, not a master-owned file.
@@ -26,9 +24,13 @@ cause, not a master-owned file.
    test that was skipped, a `spec` scenario quietly retagged
    `characterization`, or a scenario silently dropped is a blocker, not a
    detail.
-5. **No production code in a test phase's diff** unless a fix plan authorizes
-   it. Check the changed-file list; an unauthorized production-source change
-   fails the phase.
+5. **No production code in a test phase's diff, period.** No authorization
+   exists — this build never touches production code. Check the
+   changed-file list; any production-source change fails the phase.
+6. **Every red test is accounted for.** A red test passes this gate only as
+   KNOWN-DEFECT: annotated with its git-issue reference and recorded in the
+   triage log, in which case it counts as TRACKED, not a failure. An
+   unannotated, unrecorded red FAILs the phase.
 
 ## Defaults — depart when the situation earns it, and say why
 
@@ -42,12 +44,10 @@ cause, not a master-owned file.
   colocated `__tests__/`, the right file suffix for rendered vs non-rendered
   units, the smoke suffix reserved for infra-proof tests. A test in a stray
   central location is a finding.
-- **Check the cause and the code still agree.** Post-fix, the cause must record
-  the defect as confirmed and fixed with its plan reference; a cause left
-  describing the broken behavior is a stale specification.
-- **Post-fix, run wider than the failure**: the phase's suite, the whole
-  accumulated suite, and the typecheck gate. A fix that greens one test and
-  reds another is the outcome this check exists for.
+- **Check KNOWN-DEFECT annotations are honest.** Each one names a real,
+  open git issue filed by the master and matches a triage-log row. An
+  annotation without an issue, or an issue nobody filed, is a red test
+  wearing a costume — FAIL the phase.
 
 ## Verdicts
 

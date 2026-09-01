@@ -206,7 +206,7 @@ Classify failures:
 - environment/tooling problem
 - unclear requirement
 
-Fix the underlying issue rather than weakening expectations to achieve a green test suite.
+Fix the underlying issue rather than weakening expectations to achieve a green test suite. ("The implementation" here means the code this task is writing; a defect exposed in pre-existing code is recorded and filed via the ISSUE PATH — never fixed mid-build.)
 
 ---
 

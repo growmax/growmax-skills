@@ -102,14 +102,13 @@ established. That requirement is what keeps the tag honest.
 
 | Role | Authority | Writes |
 |---|---|---|
-| `test-orchestrator` (master) | Owns the batch: pre-flight, waves, worktrees, merges, gates, ledgers, commits. Routes triage verdicts, sizes fix paths. | plan `Status:` lines, coverage plan §4/§5, triage log, git |
+| `test-orchestrator` (master) | Owns the batch: pre-flight, waves, worktrees, merges, gates, ledgers, commits. Routes triage verdicts, files defect issues. | plan `Status:` lines, coverage plan §4/§5, triage log, git |
 | `test-planner` | Decomposes one batch into a phased plan. Read-only analyst — never scenario design. | `void/test/Flow-based-plans/unit-test-<batch>.md` |
 | `test-designer` (Pass A) | Full judgment over contract, risk, scenarios, depth, doubles. Bound by the authority-tag invariant. | `void/test/<batch>/<unit>.test-cause.md` |
 | `test-adversary` | Judgment over whether a cause would catch real regressions; may send it back. | nothing — verdict + evidence |
 | `test-implementer` (Pass B) | Judgment over mechanics, fixtures, doubles. **No authority over expectations.** | colocated test files, shared test-utils (when its wave owns them) |
 | `test-triage` | **Sole** authority to classify a red test. Fixes nothing. | nothing — verdict + evidence (master persists) |
-| `test-verifier` | Phase gates; post-fix confirmation that the cause is satisfied and nothing regressed. | nothing — verdict + evidence |
-| `planner` / `builder` / `verifier` / `reviewer` | The host's feature-pipeline personas, unchanged — the fix path (HOST-DEPENDENCIES §1) | fix plan + production code |
+| `test-verifier` | Phase gates — no evidence, no pass; counts issue-linked KNOWN-DEFECT reds as TRACKED. | nothing — verdict + evidence |
 
 Pass A and Pass B are separate roles deliberately (`unit-testing` SKILL §14):
 one role doing both reliably degrades the test-cause into a summary of the
@@ -140,33 +139,34 @@ human-approved. It re-enters mid-build only if a batch needs re-decomposition.
    ├─ RED? ─► test-triage (read-only; verdict + evidence + minimal repro)
    │            ├─ TEST-BUG           → implementer fixes mechanics
    │            ├─ CAUSE-WRONG        → designer revises, records why
-   │            ├─ PRODUCTION-DEFECT  → FIX PATH ↓
+   │            ├─ PRODUCTION-DEFECT  → ISSUE PATH ↓ — the flow ends here
+   │            │                       for this failure
    │            └─ INTENT-UNDECIDABLE → provisional characterization, tagged,
    │                                    raised in the batch report
    │
-   │   FIX PATH — reuses the host's real pipeline, nothing bespoke:
-   │      planner  → <host plans dir>/fix-<unit>-<defect>.md
-   │      builder  → the production fix
-   │      verifier → static gates + conformance
-   │      reviewer → the production diff
-   │      test-verifier → originally-failing test green
-   │                    + whole accumulated suite + typecheck, no regression
-   │      → test-cause updated: defect confirmed, fixed, plan referenced
+   │   ISSUE PATH — reporting, not fixing:
+   │      master files a git issue from the triage verdict (dedup-checked
+   │      against open issues; body per §8) → triage-log row: Route = issue
+   │      URL, Outcome = open/closed → the defect test is committed annotated
+   │      KNOWN-DEFECT with the issue reference → phase continues
    │
-   └─ green + cause satisfied ─► merge → Status ☑ → teardown (§6)
+   └─ tests run + cause satisfied (issue-linked reds tracked) ─► merge
+      → Status ☑ → teardown (§6)
 ```
 
-Fix-path authority:
+Issue-path authority:
 
-- `spec`-authority failure with a **trivial/small** fix (one file, no behavior
-  question — a rounding branch, a missing error case): the master routes it
-  through the fix path and reports it. Work continues.
-- A fix that **changes business behavior**, spans modules, or contradicts an
-  intent doc: **stop and ask the human.** That is a product decision, and may
-  call for updating the knowledge base rather than the code. It also cannot
-  be driven from inside a test phase if the host's `planner` refuses
-  standard/epic work without an approved architecture model — such a fix
-  leaves the test build and becomes its own feature-pipeline run.
+- Every PRODUCTION-DEFECT verdict becomes a git issue — no exceptions, no
+  size judgment. The master files it from the triage evidence, dedup-checked
+  against open issues, and records the URL in the triage log. No role in
+  this build changes production code; the fix belongs to the host's own
+  development process, tracked by the issue. When a fix later lands, the
+  host's own pipeline un-marks the KNOWN-DEFECT test.
+- The defect-exposing test is committed annotated KNOWN-DEFECT with the
+  issue reference (the host's runner mechanism — an expected-fail marker or
+  a skip-with-issue-link — chosen at adoption and recorded in the coverage
+  plan §2). The verifier counts an issue-linked red as TRACKED, not a
+  failure; an unannotated red fails the phase.
 - `INTENT-UNDECIDABLE`: provisional characterization, aggregated, presented at
   batch end. Ambiguity never blocks a wave.
 
@@ -192,7 +192,7 @@ branch**, which is the teardown guard.
      ../.test-wt/<batch>-<phase>  test            # from the tip of test, so the
                                                   # phase sees all merged work
 2. <copy the dependency dir into the worktree — e.g. cp -c -R node_modules>
-3. dispatch designer → adversary → implementer → triage/fix → test-verifier
+3. dispatch designer → adversary → implementer → triage/issue → test-verifier
    (all with the worktree as their working directory)
 4. green: from the test worktree —
      git merge --no-ff test/<batch>-<phase> \
@@ -203,8 +203,7 @@ branch**, which is the teardown guard.
    -d refusing = the merge did not happen = abort teardown, escalate
 ```
 
-`--no-ff`, never squash: the phase stays a visible unit in history and a
-`fix(...)` commit inside it stays legible beside the `test(...)` commits.
+`--no-ff`, never squash: the phase stays a visible unit in history.
 
 ### 6.2 Abandoned phases are not deleted
 
@@ -222,9 +221,6 @@ explicit human approval (`git branch -d` refuses it anyway).
 - **Serialized shared infra:** the shared test-utils directory, the runner's
   config and setup files, the boundary-mock directory. A phase that must
   change these runs alone in its wave.
-- **Propagate production fixes:** after a fix merges into `test`, the master
-  runs `git merge test` inside every live phase worktree. Otherwise a
-  parallel phase tests unfixed code and its triage verdicts are worthless.
 - **Merges are serialized** by the master, one at a time.
 - **Test runners:** with 3 phases live, cap the runner's worker count (e.g.
   half the machine's cores) so concurrent runs don't saturate it.
@@ -265,8 +261,7 @@ unbuilt phase.
 | Gate | When |
 |---|---|
 | Pre-flight decisions | Batch start, once — Findings items needing a call (e.g. a new devDependency) |
-| Business-behavior fix | Any production fix that changes behavior, spans modules, or contradicts an intent doc |
-| Batch report | Batch end — open questions, provisional characterizations, defects found and fixed |
+| Batch report | Batch end — open questions, provisional characterizations, defects found and issues filed |
 | Abandoned-phase teardown | Only when a phase is abandoned unmerged |
 
 Everything else the master decides and reports.
@@ -277,10 +272,10 @@ Everything else the master decides and reports.
 
 | Artifact | Owner | Purpose |
 |---|---|---|
-| `void/test/<batch>/<unit>.test-cause.md` | designer (updated post-fix) | the specification and its rationale |
+| `void/test/<batch>/<unit>.test-cause.md` | designer | the specification and its rationale |
 | colocated test files | implementer | the suite |
 | `void/test/<batch>/triage-log.md` | master, from triage verdicts | every red test: verdict, evidence, route, outcome |
-| `<host plans dir>/fix-<unit>-<defect>.md` | planner | production fixes the suite found |
+| git issues (host's tracker) | master, from triage verdicts | the production defects the suite found — the fix itself is the host's own process |
 | coverage plan §4 / §5 | master | batch status; newly found domain traps |
 
 The triage log is the highest-value output of the build: the record of what
@@ -297,15 +292,35 @@ count what the suite caught:
 
 | # | Unit · test | Scenario authority | Verdict | Evidence | Route | Outcome |
 |---|---|---|---|---|---|---|
-| 1 | sessionStore · "offline refresh is skipped" | spec | PRODUCTION-DEFECT | `sessionStore.ts:142` skips the connectivity check; the session doc §8 requires it | fix plan `<plans>/fix-sessionstore-offline-skip.md` | fixed, re-confirmed <date> |
+| 1 | sessionStore · "offline refresh is skipped" | spec | PRODUCTION-DEFECT | `sessionStore.ts:142` skips the connectivity check; the session doc §8 requires it | issue <tracker-url/123> | open — test annotated KNOWN-DEFECT #123 |
 | 2 | cachePersister · "closed flag blocks a throttled write" | inference | TEST-BUG | fake timers not advanced with the async variant | implementer | green |
 ```
 
 Rules: one row per **red test**, never per test file; `Evidence` carries the
 production `file:line` and the contract source; `Outcome` is filled in when
-the route closes, so an open row is visibly open. A batch whose log is empty
-says something too — record "no red tests" explicitly rather than omitting the
-file.
+the route closes, so an open row is visibly open — for a defect row that
+means the issue's state (open, or closed with the closing date). A batch
+whose log is empty says something too — record "no red tests" explicitly
+rather than omitting the file.
+
+### The defect issue — the format
+
+One git issue per PRODUCTION-DEFECT verdict, filed by the master,
+dedup-checked against open issues first. Fixed shape, so issues stay
+comparable and stand alone for a reader who never saw this build:
+
+- Title: `<unit>: <the broken promise>` — e.g. `sessionStore: offline
+  refresh is skipped`
+- **Authority:** the scenario's tag (`spec` / `inference`)
+- **Contract:** the doc section, invariant, type, or caller assumption that
+  decides who is wrong
+- **Evidence:** the production `file:line` responsible + the failing
+  assertion
+- **Minimal repro:** smallest input + expected/actual (from triage)
+- **Blast radius:** who else calls this; what stands on it
+- **Found by:** gsecure test build, batch `<BATCH>`, phase `<PHASE>` — triage
+  log row reference
+- Labels: `gsecure`, `production-defect` (the host may extend)
 
 ### The batch report — the format
 
@@ -314,8 +329,7 @@ a transcript):
 
 1. **Phases** — merged, with their commit SHAs; anything abandoned, and why.
 2. **Defects found** — one line each: what was wrong, the contract it
-   violated, the fix plan reference, and whether it is fixed or waiting on the
-   human.
+   violated, the issue link, and the issue's state (open / closed).
 3. **Awaiting a decision** — provisional characterizations (`INTENT-UNDECIDABLE`)
    and open questions, each phrased as a question the human can answer without
    reading the code.
@@ -335,9 +349,12 @@ them apply where:
 
 | Situation | Gates |
 |---|---|
-| A test phase | that phase's own test command over its paths (written into every batch plan's Acceptance line) + the typecheck gate + the lint gate (test files are code) |
+| A test phase | that phase's own test command over its paths (written into every batch plan's Acceptance line) + the typecheck gate + the lint gate (test files are code) — issue-linked KNOWN-DEFECT reds count as TRACKED, not failures |
 | A wave of 2+, and batch end, on `test` | the full suite + the typecheck gate + the lint gate |
-| A production fix inside the fix path | the **full** static set, the conformance gate included — the fix touches production code, so architecture drift is back in scope |
+
+gsecure never changes production code, so no gate set applies to production
+changes — if a gate fails on production code the build did not touch, that
+is a pre-existing finding to report, not something this build fixes.
 
 If the host keeps a warnings baseline for its lint gate, errors gate the build
 and a **new warning class** a phase introduces is a finding even when the
@@ -397,7 +414,7 @@ inherits it.
 
 A full-application build is on the order of a hundred phases and several
 hundred role dispatches (four per phase — designer + adversary + implementer
-+ verify — before any triage or fix path). Two consequences worth planning
++ verify — before any triage or issue filing). Two consequences worth planning
 around:
 
 - **The cheap decisions compound with every phase.** Line-ranged plan reads

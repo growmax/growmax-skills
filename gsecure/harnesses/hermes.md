@@ -2,7 +2,7 @@
 
 Hermes (https://hermes-agent.nousresearch.com) runs gsecure with zero shims:
 it auto-loads `AGENTS.md` from the repo root — and in gsecure that file IS
-the workflow contract (premise, roles, phase loop, fix path, worktree
+the workflow contract (premise, roles, phase loop, issue path, worktree
 lifecycle, human gates). This file is the mapping from gsecure roles to
 Hermes primitives.
 

@@ -4,7 +4,9 @@ A standalone agentic system whose product is a **test-cause**: a specification
 of what a unit of code promises and what would falsify that promise, derived
 from intent — with the implementation read as evidence, never as the contract.
 A red test is the product of this pipeline, not an obstacle; the role that
-writes tests has no authority to weaken an expectation to reach green.
+writes tests has no authority to weaken an expectation to reach green. The
+build never touches production code: a defect it finds becomes a git issue,
+and the flow ends when the tests have run.
 
 **Project- and stack-agnostic.** gsecure runs in any project — FE-only,
 BE-only, or full-stack — and assumes nothing about the language, framework,
@@ -29,7 +31,7 @@ shim under `harnesses/`.
 | `harnesses/` | Thin shims per agent CLI (`claude/`, `opencode/`) + `hermes.md` dispatch notes. Shims only point at `agents/` — no substance. See `harnesses/README.md`. |
 | `void/test/README.md` | The session/workspace conventions: where plans, test-causes, and triage logs live; naming. State is derived from disk. |
 | `void/test/unit-test-coverage-plan.template.md` | Blank master flow/phase map — copy to `void/test/unit-test-coverage-plan.md` in the host project and fill it. |
-| `HOST-DEPENDENCIES.md` | What the host project must provide: feature pipeline (fix path), static gates, knowledge base of intent, test stack, git. |
+| `HOST-DEPENDENCIES.md` | What the host project must provide: issue tracker + CLI, static gates, knowledge base of intent, test stack, git. |
 
 Test infrastructure (runner config, shared test-utils, boundary mocks) is NOT
 part of gsecure — it is host-project code, installed by the host's B0 batch.
@@ -70,7 +72,7 @@ proves the stack with a smoke test. The manual equivalent of what it does:
 4. Fill `standards/test-file-structure.md` for the host's layout, and copy
    `references/test-mechanics.template.md` to `references/test-mechanics.md`
    and fill it for the host's stack.
-5. Install the host prerequisites in `HOST-DEPENDENCIES.md` (feature pipeline,
+5. Install the host prerequisites in `HOST-DEPENDENCIES.md` (issue tracker,
    static gates, knowledge base, test stack, git integration branch).
 6. `test-planner` decomposes one batch into
    `void/test/Flow-based-plans/unit-test-<batch>.md`; the human approves it.

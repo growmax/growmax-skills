@@ -12,7 +12,7 @@ and follow it exactly. It is platform-neutral and shared by every harness
 persona.
 
 Workflow contract: `AGENTS.md` (binding — the premise, the
-two-tier rule model, scenario authority tags, the phase loop, the fix path,
+two-tier rule model, scenario authority tags, the phase loop, the issue path,
 and the worktree lifecycle).
 
 Do not put substance here. Edit the canonical role file instead.

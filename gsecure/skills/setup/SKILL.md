@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Use when installing gsecure into a project — copies the test-build layer non-destructively, gathers the project's context (stack, existing test tooling, test structure, gates, knowledge base, fix-path personas), adopts what exists, and asks the developer for what is missing. NEVER suggests test tools. Run once per project, in the main session (it asks the human questions).
+description: Use when installing gsecure into a project — copies the test-build layer non-destructively, gathers the project's context (stack, existing test tooling, test structure, gates, knowledge base, issue tracker), adopts what exists, and asks the developer for what is missing. NEVER suggests test tools. Run once per project, in the main session (it asks the human questions).
 ---
 
 # Setup — installing gsecure into a project
@@ -87,10 +87,10 @@ output). Record findings; the docs filled in Step 6 cite them.
    path; the test-designer will read it. None → say so honestly (more
    `characterization`-tagged scenarios is the expected outcome, not a
    failure).
-5. **Fix-path personas** — the project's feature-pipeline roles
-   (planner / builder / verifier / reviewer or equivalents,
-   HOST-DEPENDENCIES §1) and its plans directory. Found → record. Missing →
-   record that triage's PRODUCTION-DEFECT verdicts escalate to the human.
+5. **Issue tracker** — the project's git issue tracker and its CLI (e.g.
+   GitHub + `gh`, HOST-DEPENDENCIES §1), including issue search for dedup.
+   Found → record. Missing → record that triage's PRODUCTION-DEFECT verdicts
+   are logged and escalate to the human instead of being filed.
 6. **Static gates** — the commands that actually exist (typecheck, lint,
    conformance). An absent gate is ABSENT — never write one into the docs
    as if it ran. A gate that does not run has not passed.
