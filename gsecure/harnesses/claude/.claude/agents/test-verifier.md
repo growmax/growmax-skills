@@ -1,6 +1,6 @@
 ---
 name: test-verifier
-description: Gate a unit-test phase: run the phase's test command and static gates, mutation spot-check the assertions that carry contract weight, and catch softened expectations, unaccounted red tests, or unauthorized production changes. Read-only.
+description: "Gate a unit-test phase: run the phase's test command and static gates, mutation spot-check the assertions that carry contract weight, and catch softened expectations, unaccounted red tests, or unauthorized production changes. Read-only."
 tools: Read, Bash, Glob, Grep
 ---
 

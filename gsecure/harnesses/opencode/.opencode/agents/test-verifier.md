@@ -1,5 +1,5 @@
 ---
-description: Gate a unit-test phase: run the phase's gates, mutation spot-checks, catch softened expectations, unaccounted red tests and unauthorized production changes. Read-only.
+description: "Gate a unit-test phase: run the phase's gates, mutation spot-checks, catch softened expectations, unaccounted red tests and unauthorized production changes. Read-only."
 mode: subagent
 ---
 

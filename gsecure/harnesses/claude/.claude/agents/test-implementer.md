@@ -1,6 +1,6 @@
 ---
 name: test-implementer
-description: Pass B of a unit-test phase: implement the scenarios the test-cause selected, faithfully, and run them. Has NO authority to weaken an expectation — a red test is handed up, never made to pass.
+description: "Pass B of a unit-test phase: implement the scenarios the test-cause selected, faithfully, and run them. Has NO authority to weaken an expectation — a red test is handed up, never made to pass."
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

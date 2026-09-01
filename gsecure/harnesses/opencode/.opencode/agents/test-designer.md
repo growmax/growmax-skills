@@ -1,5 +1,5 @@
 ---
-description: Pass A: reconstruct a unit's behavioral contract from intent, attack it, and write the authority-tagged test-cause. Writes no test code.
+description: "Pass A: reconstruct a unit's behavioral contract from intent, attack it, and write the authority-tagged test-cause. Writes no test code."
 mode: subagent
 ---
 
