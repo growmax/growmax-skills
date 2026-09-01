@@ -9,7 +9,7 @@ Read `agents/test-designer.md` at the repo root and follow it
 exactly — that platform-neutral file is the single source of truth for this
 role across every harness, and it wins over any conflicting instruction. Its
 workflow contract is `AGENTS.md` (the premise, the two-tier
-rule model, scenario authority tags, the phase loop, the fix path, the
+rule model, scenario authority tags, the phase loop, the issue path, the
 worktree lifecycle) — binding too.
 
 Key paths: roles in `agents/`, mechanics in

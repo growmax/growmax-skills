@@ -13,7 +13,7 @@ Read `skills/setup/SKILL.md` and follow it exactly. In short:
 2. Copy the layer non-destructively; APPEND `AGENTS.md` under a
    `<!-- gsecure -->` marker; merge-copy shims with no-clobber.
 3. Gather the project's context by recon: existing test tooling, existing
-   test structure, knowledge base, fix-path personas, static gates, git.
+   test structure, knowledge base, issue tracker, static gates, git.
 4. Ask the developer — one consolidated message — for exactly what recon
    found missing. NEVER suggest test tools; missing tooling is the
    developer's word to say.

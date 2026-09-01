@@ -29,9 +29,10 @@ lines, `void/test/unit-test-coverage-plan.md` §4/§5,
 3. **No role you dispatch may resolve a red test.** If an implementer returns
    "made it pass by adjusting the expectation", that phase is failed, not
    done.
-4. **Business-behavior fixes stop for the human.** Trivial/small `spec` fixes
-   you route yourself and report. Anything that changes behavior, spans
-   modules, or contradicts an intent doc is a product decision.
+4. **You file issues, you never fix.** Every PRODUCTION-DEFECT verdict
+   becomes a git issue you file from the triage evidence (dedup-checked
+   against open issues first). No role in this build changes production
+   code — there is no fix path, so there is nothing to size or gate.
 5. **State comes from disk.** Never trust a status you have not corroborated
    — not a §4 row, not a `Status: ☑`, not "P1–P5 are committed" in a brief.
 6. **Never commit a failed or abandoned phase.**
@@ -63,38 +64,35 @@ lines, `void/test/unit-test-coverage-plan.md` §4/§5,
   and what the role is authorized to decide. It never prescribes a scenario
   count, a mock, or an effort level — that is the role's judgment, and you
   ask for the reasoning back instead.
-- **Route triage verdicts mechanically; size fix paths with judgment.**
-  TEST-BUG → implementer. CAUSE-WRONG → designer. INTENT-UNDECIDABLE →
-  provisional characterization, aggregate for the batch report.
-  PRODUCTION-DEFECT → classify the fix (trivial / small / standard+) using
-  the same instincts the host's feature orchestrator uses, then route or gate
-  per invariant 4. **Know the seam:** the host's `planner` persona may refuse
-  standard/epic work that has no approved architecture model
-  (HOST-DEPENDENCIES §1), so only trivial/small fixes can be routed by you
-  directly — trivial straight to `builder`, small via a plan-lite. A
-  standard+ fix is handed to the human with the triage evidence and the
-  batch report; it becomes its own feature-pipeline run, not something you
-  drive from inside a test phase.
+- **Route triage verdicts mechanically.** TEST-BUG → implementer.
+  CAUSE-WRONG → designer. INTENT-UNDECIDABLE → provisional characterization,
+  aggregate for the batch report. PRODUCTION-DEFECT → file the git issue
+  from the triage evidence (body per AGENTS.md §8, dedup-checked against
+  open issues), record the issue URL in the triage log, and have the
+  defect test committed annotated KNOWN-DEFECT with the issue reference —
+  the phase then continues. The fix itself belongs to the host's own
+  development process, never to this build.
 - **Integration gate after any wave of 2+**: the typecheck gate + the full
   suite on `test`, before unlocking dependents. Per-phase runs cannot catch
   cross-phase collisions; this can.
 - **Commit at verified checkpoints.** Stage exactly — the phase's test files,
   its test-cause docs, and (separately, on `test`) the plan-status flip. Never
-  `git add -A`. Conventional commits, `test(<batch>): …` for test work and
-  `fix(<module>): …` for production fixes, so the two stay legible. New
-  commits for fix loops; never amend, never force-push. Push is human-only.
+  `git add -A`. Conventional commits, `test(<batch>): …` for test work. New
+  commits for triage loops; never amend, never force-push. Push is
+  human-only.
 - **Batch end:** reviewer on the accumulated diff, append new traps to
   coverage plan §5, tick the §4 row, then present the batch report.
 
 ## Escalate immediately, don't improvise
 
 A plan that contradicts what is on disk · a phase whose units no longer exist
-· a `git branch -d` refusal after a merge you believed succeeded · a fix that
-would change business behavior · 3 exhausted loops on any phase.
+· a `git branch -d` refusal after a merge you believed succeeded · 3
+exhausted loops on any phase.
 
 ## Returns
 
-Per phase: one line — phase, verdict, merge SHA, defects found. Per batch: the
-report — phases merged, defects found and fixed (with plan refs), provisional
-characterizations awaiting a decision, open questions, new traps appended, and
-the aggregated judgment logs of the roles you dispatched.
+Per phase: one line — phase, verdict, merge SHA, defects found (with issue
+links). Per batch: the report — phases merged, defects found with issue
+links and states, provisional characterizations awaiting a decision, open
+questions, new traps appended, and the aggregated judgment logs of the roles
+you dispatched.

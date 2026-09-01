@@ -6,16 +6,15 @@ stack; they are NOT part of gsecure. Works for FE-only, BE-only, and
 full-stack projects — each section says what the host must have, whatever its
 stack.
 
-## 1. A feature pipeline (fix path)
+## 1. An issue tracker + CLI
 
-When triage confirms a PRODUCTION-DEFECT, the fix path reuses the host's
-feature-pipeline personas: `planner` → `builder` → `verifier` → `reviewer`
-(see `AGENTS.md` §5). Without an equivalent, a production fix
-cannot be routed — triage verdicts escalate to the human instead. Fix plans
-land in the host's plans directory as `fix-<unit>-<defect>.md`. Note the seam:
-if the host's `planner` refuses standard/epic work without an approved
-architecture model, large fixes leave the test build and become their own
-feature-pipeline run.
+When triage confirms a PRODUCTION-DEFECT, the master files an issue in the
+host's tracker (see `AGENTS.md` §5) — the flow ends there; fixing the
+production code is the host's own development process, never this build's.
+The host must provide an issue tracker reachable from the command line
+(e.g. GitHub + `gh`), with an issue-search facility so the master can
+dedup against open issues before filing. Without one, PRODUCTION-DEFECT
+verdicts are recorded in the triage log and escalate to the human instead.
 
 ## 2. Static gates (host-configured)
 
@@ -28,11 +27,12 @@ roles can cite (e.g. an `AGENTS.md` "Static gates" section):
   host keeps a warnings baseline, record where it lives; errors gate, and a
   NEW warning class a phase introduces is a finding even when the command
   exits 0.
-- An **architecture-conformance gate** (optional per host) — runs when the
-  fix path touches production code. If absent, the fix-path gate is the
-  typecheck + lint + the full unit suite.
 - Binding rule: a gate that does not run has not passed. A `Missing script`
   or unconfigured tool is DID NOT RUN, never a pass.
+
+gsecure never changes production code, so no gate set applies to production
+changes from this build — an architecture-conformance gate, if the host has
+one, runs in the host's own pipeline when it fixes a reported defect.
 
 ## 3. A knowledge base of intent
 
@@ -70,4 +70,6 @@ git repo and a long-lived integration branch (this system's docs call it
 
 The whole-suite regression surface (a suite-runner persona, E2E tiers,
 CI wiring) is deliberately out of scope: gsecure BUILDS test-causes; running
-the whole suite is the host's existing tooling.
+the whole suite is the host's existing tooling. So is FIXING what the suite
+finds: gsecure reports production defects as git issues; the fix is the
+host's own development process.

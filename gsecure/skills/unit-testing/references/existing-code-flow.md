@@ -168,7 +168,7 @@ Clearly distinguish characterization tests from requirement tests.
 
 If the intended behavior is clear and the implementation violates it, create the test that demonstrates the defect. Do not alter the expectation to make the current code pass.
 
-If the task explicitly includes fixing the defect, fix the implementation after the failing test establishes the expected behavior. In this repo, a defect discovered mid-batch is recorded as a Finding in the plan file — never silently fixed unless the human has explicitly asked for it.
+A defect discovered mid-batch is recorded as a Finding in the plan file and filed as a git issue by the build's ISSUE PATH — this flow never fixes production code, even when the fix looks obvious.
 
 ---
 
@@ -324,7 +324,7 @@ For every failure, classify it:
 
 Never automatically change an expected value just because the implementation returns something else.
 
-If the test exposes an implementation defect, preserve the test and fix the production code only when the task permits — otherwise record it as a Finding.
+If the test exposes an implementation defect, preserve the test and record the defect as a Finding for the ISSUE PATH — this flow never fixes production code.
 
 ---
 

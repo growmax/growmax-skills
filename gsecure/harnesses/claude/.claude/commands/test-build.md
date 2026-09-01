@@ -1,5 +1,5 @@
 ---
-description: Build ONE batch of the unit-test suite — worktree-per-phase designer/adversary/implementer/triage loop, with production-defect fix paths (test-orchestrator persona)
+description: Build ONE batch of the unit-test suite — worktree-per-phase designer/adversary/implementer/triage loop, with production-defect issue filing (test-orchestrator persona)
 argument-hint: <batch, e.g. B2>
 ---
 
@@ -15,8 +15,8 @@ the human gates, so do not delegate this persona to a subagent.
    whole file.
 3. Run pre-flight, then the wave loop. Dispatch the roles via the Agent tool
    using the `test-designer`, `test-adversary`, `test-implementer`,
-   `test-triage` and `test-verifier` subagent types; production fixes go
-   through the existing `planner` / `builder` / `verifier` / `reviewer`.
+   `test-triage` and `test-verifier` subagent types. Production defects
+   become git issues you file from the triage evidence — never fixes.
 4. Each phase runs in its own worktree and branch, merges into `test` with
    `--no-ff`, and is torn down only after `git branch -d` succeeds
    (README §6).
