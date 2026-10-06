@@ -121,6 +121,18 @@ git pull                # later: symlinked skills update instantly
 > shadows/press-scale, hardcoded red on buttons, arbitrary `--ring` forms, and synonym icons,
 > citing the rule ID). Both exit silently on everything else.
 
+## Mods (opt-in)
+
+Mods are Claude Code plugins that add UI and behavior inside Claude Code itself (a button above
+the prompt, a popover, a status line). They live in [`mods/`](mods/), each listed as its own
+plugin in this marketplace, so installing `growmax-skills` doesn't turn any of them on.
+
+| Mod | What it does | Install |
+|---|---|---|
+| [`prompt-enhancer`](mods/prompt-enhancer/) | **✦ Enhance** above the prompt box (or `/enhance <draft>`) opens a popover that rewrites your rough draft as a **Precise** prompt, or an **Expert agents** prompt that picks the right experts (senior reviewer, architect + PM, …) and has Claude run one subagent each. You review before sending. | `/plugin install prompt-enhancer@growmax` |
+
+Mods need Claude Code 2.1.287+. To add one, see [`mods/README.md`](mods/README.md).
+
 ## Add a new skill
 
 1. Create a folder under `skills/<your-skill-name>/` containing `SKILL.md` (use Claude's

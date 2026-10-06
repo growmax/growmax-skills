@@ -33,6 +33,19 @@
         "workflow",
         "agentic-development"
       ]
+    },
+    {
+      "name": "prompt-enhancer",
+      "source": "./mods/prompt-enhancer",
+      "description": "Mod: an Enhance button above the prompt box (or /enhance <draft>) opens a popover that rewrites your draft as a Precise prompt or an Expert agents prompt (picks the right experts, e.g. senior reviewer, architect + PM, and has Claude run one subagent each). Uses session context; you review before sending. Opt-in, separate from growmax-skills.",
+      "category": "productivity",
+      "keywords": [
+        "mods",
+        "prompt",
+        "prompt-engineering",
+        "agents",
+        "productivity"
+      ]
     }
   ]
 }
