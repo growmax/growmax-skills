@@ -1,0 +1,14 @@
+{
+  "name": "prompt-enhancer",
+  "description": "Rewrite a rough prompt before you send it. An Enhance button above the prompt box (or /enhance <draft>) opens a popover: Precise gives a clean, specific rewrite; Expert agents picks the experts the request needs and writes a prompt that has Claude run one subagent per expert. Uses the session's context; nothing is sent until you press Enter.",
+  "author": {
+    "name": "Growmax"
+  },
+  "types": "./types/index.d.ts",
+  "homepage": "https://github.com/growmax/growmax-skills/tree/main/mods/prompt-enhancer",
+  "keywords": [
+    "mods",
+    "prompt",
+    "productivity"
+  ]
+}

@@ -1,0 +1,2 @@
+# Written by Claude Code each time it loads a mod (API types + tsconfig base)
+*/.claude-plugin/types/
